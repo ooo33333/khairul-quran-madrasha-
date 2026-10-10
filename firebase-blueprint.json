@@ -1,0 +1,197 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Administrative user of the Madrasa Office Management System",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Firebase Auth UID" },
+        "name": { "type": "string", "description": "Full name of the user" },
+        "email": { "type": "string", "description": "Email address" },
+        "role": { "type": "string", "enum": ["admin", "accountant", "staff"], "description": "Access role" },
+        "status": { "type": "string", "enum": ["active", "inactive"], "description": "Account status" },
+        "createdAt": { "type": "string", "description": "Creation timestamp" }
+      },
+      "required": ["uid", "name", "email", "role", "status", "createdAt"]
+    },
+    "Student": {
+      "title": "Student",
+      "description": "Student academic and registry profile",
+      "type": "object",
+      "properties": {
+        "studentId": { "type": "string", "description": "Unique Student ID e.g. STD-1001" },
+        "studentName": { "type": "string", "description": "Student full name" },
+        "fatherName": { "type": "string", "description": "Father name" },
+        "motherName": { "type": "string", "description": "Mother name" },
+        "dateOfBirth": { "type": "string", "description": "Date of birth" },
+        "phone": { "type": "string", "description": "Contact phone" },
+        "address": { "type": "string", "description": "Home address" },
+        "className": { "type": "string", "description": "Enrolled class" },
+        "section": { "type": "string", "description": "Class section" },
+        "admissionDate": { "type": "string", "description": "Admission date" },
+        "status": { "type": "string", "enum": ["Active", "On Leave", "Graduated", "Inactive"], "description": "Enrollment status" },
+        "photoUrl": { "type": "string", "description": "Photo URL" },
+        "createdAt": { "type": "string", "description": "Timestamp" },
+        "updatedAt": { "type": "string", "description": "Timestamp" }
+      },
+      "required": ["studentId", "studentName", "fatherName", "className", "section", "admissionDate", "status"]
+    },
+    "StudentFee": {
+      "title": "StudentFee",
+      "description": "Tuition, admission, and academic fee record",
+      "type": "object",
+      "properties": {
+        "studentId": { "type": "string", "description": "Student reference ID" },
+        "studentName": { "type": "string", "description": "Student name" },
+        "className": { "type": "string", "description": "Class name" },
+        "feeType": { "type": "string", "description": "Monthly Fee, Admission Fee, Other Fee" },
+        "amount": { "type": "number", "description": "Total fee charged" },
+        "paidAmount": { "type": "number", "description": "Total fee paid" },
+        "dueAmount": { "type": "number", "description": "Balance due" },
+        "paymentDate": { "type": "string", "description": "Date of payment" },
+        "paymentMethod": { "type": "string", "description": "Cash, Bank, Cheque" },
+        "note": { "type": "string", "description": "Voucher or receipt note" },
+        "createdAt": { "type": "string", "description": "Timestamp" },
+        "updatedAt": { "type": "string", "description": "Timestamp" }
+      },
+      "required": ["studentId", "studentName", "className", "feeType", "amount", "paidAmount", "dueAmount"]
+    },
+    "AibTransaction": {
+      "title": "AibTransaction",
+      "description": "Aib special endowment and welfare fund transaction",
+      "type": "object",
+      "properties": {
+        "transactionId": { "type": "string", "description": "Transaction identifier" },
+        "date": { "type": "string", "description": "Transaction date" },
+        "type": { "type": "string", "enum": ["collection", "expense"], "description": "Transaction type" },
+        "category": { "type": "string", "description": "Endowment, Waqf, Stipend" },
+        "description": { "type": "string", "description": "Narration" },
+        "amount": { "type": "number", "description": "Monetary value" },
+        "paymentMethod": { "type": "string", "description": "Payment mode" },
+        "createdBy": { "type": "string", "description": "User UID who posted entry" },
+        "createdAt": { "type": "string", "description": "Timestamp" }
+      },
+      "required": ["transactionId", "date", "type", "category", "description", "amount"]
+    },
+    "RevolvingFundTransaction": {
+      "title": "RevolvingFundTransaction",
+      "description": "Interest-free revolving assistance fund transaction",
+      "type": "object",
+      "properties": {
+        "transactionId": { "type": "string", "description": "Transaction identifier" },
+        "date": { "type": "string", "description": "Transaction date" },
+        "type": { "type": "string", "enum": ["collection", "distribution", "return"], "description": "Fund movement" },
+        "personName": { "type": "string", "description": "Beneficiary or contributor" },
+        "description": { "type": "string", "description": "Purpose details" },
+        "amount": { "type": "number", "description": "Fund amount" },
+        "status": { "type": "string", "description": "Disbursed, Returned, Received" },
+        "createdBy": { "type": "string", "description": "User UID" },
+        "createdAt": { "type": "string", "description": "Timestamp" }
+      },
+      "required": ["transactionId", "date", "type", "personName", "amount", "status"]
+    },
+    "BoardingStudent": {
+      "title": "BoardingStudent",
+      "description": "Hostel resident student registration",
+      "type": "object",
+      "properties": {
+        "studentId": { "type": "string", "description": "Student ID" },
+        "studentName": { "type": "string", "description": "Student full name" },
+        "className": { "type": "string", "description": "Academic class" },
+        "boardingStatus": { "type": "string", "enum": ["active", "inactive"], "description": "Hostel residency status" },
+        "joiningDate": { "type": "string", "description": "Hostel enrollment date" },
+        "room": { "type": "string", "description": "Hostel room number" },
+        "createdAt": { "type": "string", "description": "Timestamp" },
+        "updatedAt": { "type": "string", "description": "Timestamp" }
+      },
+      "required": ["studentId", "studentName", "className", "boardingStatus", "room"]
+    },
+    "BoardingTransaction": {
+      "title": "BoardingTransaction",
+      "description": "Boarding fees and mess expenses",
+      "type": "object",
+      "properties": {
+        "transactionId": { "type": "string", "description": "Transaction identifier" },
+        "date": { "type": "string", "description": "Date" },
+        "type": { "type": "string", "enum": ["fee", "foodExpense", "otherExpense"], "description": "Boarding transaction type" },
+        "category": { "type": "string", "description": "Kitchen ration, utilities, fee" },
+        "description": { "type": "string", "description": "Narration" },
+        "amount": { "type": "number", "description": "Amount" },
+        "studentId": { "type": "string", "description": "Student ID if fee" },
+        "createdBy": { "type": "string", "description": "User UID" },
+        "createdAt": { "type": "string", "description": "Timestamp" }
+      },
+      "required": ["transactionId", "date", "type", "category", "amount"]
+    },
+    "AccountTransaction": {
+      "title": "AccountTransaction",
+      "description": "General accounts ledger transaction",
+      "type": "object",
+      "properties": {
+        "transactionId": { "type": "string", "description": "Transaction identifier" },
+        "date": { "type": "string", "description": "Date" },
+        "type": { "type": "string", "enum": ["income", "expense"], "description": "Income or expense" },
+        "category": { "type": "string", "description": "Accounting head" },
+        "description": { "type": "string", "description": "Narration" },
+        "amount": { "type": "number", "description": "Amount" },
+        "paymentMethod": { "type": "string", "description": "Payment mode" },
+        "createdBy": { "type": "string", "description": "User UID" },
+        "createdAt": { "type": "string", "description": "Timestamp" }
+      },
+      "required": ["transactionId", "date", "type", "category", "description", "amount"]
+    },
+    "Settings": {
+      "title": "Settings",
+      "description": "Madrasa institutional settings and configuration",
+      "type": "object",
+      "properties": {
+        "madrasaName": { "type": "string", "description": "Institutional title" },
+        "address": { "type": "string", "description": "Physical address" },
+        "phone": { "type": "string", "description": "Contact phone" },
+        "email": { "type": "string", "description": "Official email" },
+        "academicYear": { "type": "string", "description": "Active session e.g. 1447-1448 AH" },
+        "classes": { "type": "string", "description": "Classes JSON config" },
+        "accountCategories": { "type": "string", "description": "Categories JSON config" }
+      },
+      "required": ["madrasaName", "phone", "email"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "Administrative users and roles"
+    },
+    "/students/{studentId}": {
+      "schema": { "$ref": "#/entities/Student" },
+      "description": "Registered students database"
+    },
+    "/studentFees/{feeId}": {
+      "schema": { "$ref": "#/entities/StudentFee" },
+      "description": "Student fee records"
+    },
+    "/aibTransactions/{transactionId}": {
+      "schema": { "$ref": "#/entities/AibTransaction" },
+      "description": "Aib endowment collections and expenditures"
+    },
+    "/revolvingFundTransactions/{transactionId}": {
+      "schema": { "$ref": "#/entities/RevolvingFundTransaction" },
+      "description": "Revolving fund loan and collection ledger"
+    },
+    "/boardingStudents/{boardingStudentId}": {
+      "schema": { "$ref": "#/entities/BoardingStudent" },
+      "description": "Hostel boarder residents"
+    },
+    "/boardingTransactions/{transactionId}": {
+      "schema": { "$ref": "#/entities/BoardingTransaction" },
+      "description": "Boarding fee collections and mess expenses"
+    },
+    "/accounts/{transactionId}": {
+      "schema": { "$ref": "#/entities/AccountTransaction" },
+      "description": "General institutional accounts ledger"
+    },
+    "/settings/{settingId}": {
+      "schema": { "$ref": "#/entities/Settings" },
+      "description": "System and Madrasa configuration"
+    }
+  }
+}

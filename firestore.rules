@@ -1,0 +1,148 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global Safety Net: default-deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Global Helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Admin authorization: checks bootstrap email or admin document
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == 'mdjunaidahmad13031@gmail.com' ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
+      );
+    }
+
+    // Connection test doc (used on boot)
+    match /test/{docId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // 1. Users collection
+    match /users/{userId} {
+      allow get: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow list: if isAdmin();
+      allow create: if isSignedIn() && (request.auth.uid == userId || isAdmin()) &&
+        request.resource.data.keys().hasAll(['uid', 'name', 'email', 'role', 'status', 'createdAt']) &&
+        request.resource.data.uid == userId &&
+        request.resource.data.email is string &&
+        request.resource.data.name is string &&
+        request.resource.data.name.size() <= 100 &&
+        (isAdmin() || request.resource.data.role == 'staff');
+      allow update: if isSignedIn() && (request.auth.uid == userId || isAdmin()) &&
+        request.resource.data.uid == resource.data.uid &&
+        request.resource.data.createdAt == resource.data.createdAt &&
+        (isAdmin() || (request.resource.data.role == resource.data.role && request.resource.data.status == resource.data.status));
+      allow delete: if isAdmin();
+    }
+
+    // 2. Students collection
+    match /students/{studentId} {
+      allow read: if isSignedIn();
+      allow create, update: if isSignedIn();
+      allow delete: if isAdmin();
+    }
+
+    // 3. Student Fees collection
+    match /studentFees/{feeId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() &&
+        request.resource.data.keys().hasAll(['studentId', 'studentName', 'className', 'feeType', 'amount', 'paidAmount', 'dueAmount']) &&
+        request.resource.data.amount is number && request.resource.data.amount >= 0;
+      allow update: if isSignedIn() &&
+        request.resource.data.studentId == resource.data.studentId;
+      allow delete: if isAdmin();
+    }
+
+    // 4. Aib Transactions collection
+    match /aibTransactions/{transactionId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() &&
+        request.resource.data.keys().hasAll(['transactionId', 'date', 'type', 'category', 'description', 'amount']) &&
+        request.resource.data.amount is number && request.resource.data.amount > 0 &&
+        (request.resource.data.type == 'collection' || request.resource.data.type == 'expense');
+      allow update: if isSignedIn();
+      allow delete: if isAdmin();
+    }
+
+    // 5. Revolving Fund Transactions collection
+    match /revolvingFundTransactions/{transactionId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() &&
+        request.resource.data.keys().hasAll(['transactionId', 'date', 'type', 'personName', 'amount', 'status']) &&
+        request.resource.data.amount is number && request.resource.data.amount > 0 &&
+        (request.resource.data.type == 'collection' || request.resource.data.type == 'distribution' || request.resource.data.type == 'return');
+      allow update: if isSignedIn() && (
+        isAdmin() ||
+        request.resource.data.transactionId == resource.data.transactionId
+      );
+      allow delete: if isAdmin();
+    }
+
+    // 6. Boarding Students collection
+    match /boardingStudents/{boardingStudentId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() &&
+        request.resource.data.keys().hasAll(['studentId', 'studentName', 'className', 'boardingStatus', 'room']) &&
+        request.resource.data.studentName is string && request.resource.data.studentName.size() <= 120;
+      allow update: if isSignedIn() &&
+        request.resource.data.studentId == resource.data.studentId;
+      allow delete: if isAdmin();
+    }
+
+    // 7. Boarding Transactions collection
+    match /boardingTransactions/{transactionId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() &&
+        request.resource.data.keys().hasAll(['transactionId', 'date', 'type', 'category', 'amount']) &&
+        request.resource.data.amount is number && request.resource.data.amount > 0 &&
+        (request.resource.data.type == 'fee' || request.resource.data.type == 'foodExpense' || request.resource.data.type == 'otherExpense');
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // 8. General Accounts collection
+    match /accounts/{transactionId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() &&
+        request.resource.data.keys().hasAll(['transactionId', 'date', 'type', 'category', 'description', 'amount']) &&
+        request.resource.data.amount is number && request.resource.data.amount > 0 &&
+        (request.resource.data.type == 'income' || request.resource.data.type == 'expense');
+      allow update: if isSignedIn();
+      allow delete: if isAdmin();
+    }
+
+    // 9. Settings collection
+    match /settings/{settingId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // 10. Academic Classes collection
+    match /classes/{classId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // 11. Academic Years collection
+    match /academicYears/{ayId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // 12. Account Categories collection
+    match /accountCategories/{catId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+  }
+}

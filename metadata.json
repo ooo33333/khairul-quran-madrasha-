@@ -1,0 +1,6 @@
+{
+  "name": "Madrasa Office Management System",
+  "description": "A modern, professional web-based Madrasa Office Management System for managing students, fees, Aib account, revolving fund, boarding, accounts, and administration.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
