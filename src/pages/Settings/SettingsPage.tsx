@@ -79,6 +79,12 @@ export const SettingsPage: React.FC = () => {
   const [editUserRole, setEditUserRole] = useState<UserAccount['role']>('Accountant');
   const [editUserStatus, setEditUserStatus] = useState<'Active' | 'Inactive'>('Active');
 
+  // Deletion States for Modals
+  const [deletingUser, setDeletingUser] = useState<UserAccount | null>(null);
+  const [deletingAy, setDeletingAy] = useState<AcademicYear | null>(null);
+  const [deletingClass, setDeletingClass] = useState<AcademicClass | null>(null);
+  const [deletingCat, setDeletingCat] = useState<AccountCategory | null>(null);
+
   // Academic Year State
   const [isAddAyModalOpen, setIsAddAyModalOpen] = useState(false);
   const [newAyYear, setNewAyYear] = useState('');
@@ -616,11 +622,7 @@ export const SettingsPage: React.FC = () => {
                         </button>
                         {u.id !== currentUser?.id && (
                           <button
-                            onClick={() => {
-                              if (confirm(`Are you sure you want to revoke/delete the user account for "${u.name}"?`)) {
-                                deleteUser(u.id);
-                              }
-                            }}
+                            onClick={() => setDeletingUser(u)}
                             className="p-1 text-slate-500 hover:text-red-700 hover:bg-slate-100 rounded-md transition-colors cursor-pointer"
                             title="Delete User"
                           >
@@ -712,11 +714,7 @@ export const SettingsPage: React.FC = () => {
                             </button>
                           )}
                           <button
-                            onClick={() => {
-                              if (confirm(`Are you sure you want to permanently delete Academic Year "${ay.year}"?`)) {
-                                deleteAcademicYear(ay.id);
-                              }
-                            }}
+                            onClick={() => setDeletingAy(ay)}
                             className="p-1 text-slate-400 hover:text-red-700 hover:bg-slate-100 rounded-md transition-colors cursor-pointer"
                             title="Delete Session"
                           >
@@ -738,8 +736,8 @@ export const SettingsPage: React.FC = () => {
         <div className="rounded-xl border border-slate-200 bg-white shadow-xs overflow-hidden">
           <div className="flex items-center justify-between p-5 border-b border-slate-100">
             <div>
-              <h3 className="text-sm font-bold text-slate-900">Academic Classes & Enrolled Sections</h3>
-              <p className="text-xs text-slate-500">Official class catalog and assigned class teachers</p>
+              <h3 className="text-sm font-bold text-slate-900">{t('Academic Classes & Enrolled Sections')}</h3>
+              <p className="text-xs text-slate-500">{t('Official class catalog and assigned class teachers')}</p>
             </div>
             {adminProfile?.role !== 'staff' ? (
               <button
@@ -754,11 +752,11 @@ export const SettingsPage: React.FC = () => {
                 className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-700 px-3.5 py-2 text-xs font-semibold text-white hover:bg-emerald-800 transition-colors shadow-xs cursor-pointer"
               >
                 <Plus className="h-4 w-4" />
-                <span>Add Class</span>
+                <span>{t('Add Class')}</span>
               </button>
             ) : (
               <span className="text-xs text-slate-400 font-semibold bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-lg">
-                Read-Only Mode
+                {t('Read-Only Mode')}
               </span>
             )}
           </div>
@@ -767,12 +765,12 @@ export const SettingsPage: React.FC = () => {
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
                 <tr>
-                  <th className="px-5 py-3.5">Class Name</th>
-                  <th className="px-5 py-3.5">Sections</th>
-                  <th className="px-5 py-3.5">Class Teacher</th>
-                  <th className="px-5 py-3.5 text-right">Standard Monthly Fee</th>
-                  <th className="px-5 py-3.5 text-right">Capacity / Status</th>
-                  {adminProfile?.role !== 'staff' && <th className="px-5 py-3.5 text-right">Actions</th>}
+                  <th className="px-5 py-3.5">{t('Class Name')}</th>
+                  <th className="px-5 py-3.5">{t('Sections')}</th>
+                  <th className="px-5 py-3.5">{t('Class Teacher')}</th>
+                  <th className="px-5 py-3.5 text-right">{t('Standard Monthly Fee')}</th>
+                  <th className="px-5 py-3.5 text-right">{t('Capacity / Status')}</th>
+                  {adminProfile?.role !== 'staff' && <th className="px-5 py-3.5 text-right">{t('Actions')}</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -798,7 +796,7 @@ export const SettingsPage: React.FC = () => {
                       ৳{c.monthlyFee}/mo
                     </td>
                     <td className="px-5 py-3.5 whitespace-nowrap text-right text-slate-600">
-                      <span className="font-mono">{c.totalStudents} students</span>
+                      <span className="font-mono">{c.totalStudents} {t('students')}</span>
                     </td>
                     {adminProfile?.role !== 'staff' && (
                       <td className="px-5 py-3.5 whitespace-nowrap text-right">
@@ -806,22 +804,14 @@ export const SettingsPage: React.FC = () => {
                           <button
                             onClick={() => openEditClass(c)}
                             className="p-1 text-slate-500 hover:text-emerald-700 hover:bg-slate-100 rounded-md transition-colors cursor-pointer"
-                            title="Edit Class"
+                            title={t('Edit Class')}
                           >
                             <Edit2 className="h-3.5 w-3.5" />
                           </button>
                           <button
-                            onClick={async () => {
-                              if (confirm(`Are you sure you want to delete class "${c.name}"? This action is permanent.`)) {
-                                try {
-                                  await deleteClass(c.id);
-                                } catch (err: any) {
-                                  alert(err.message || 'Failed to delete class.');
-                                }
-                              }
-                            }}
+                            onClick={() => setDeletingClass(c)}
                             className="p-1 text-slate-400 hover:text-red-700 hover:bg-slate-100 rounded-md transition-colors cursor-pointer"
-                            title="Delete Class"
+                            title={t('Delete Class')}
                           >
                             <Trash2 className="h-3.5 w-3.5" />
                           </button>
@@ -851,14 +841,14 @@ export const SettingsPage: React.FC = () => {
               className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-700 px-3.5 py-2 text-xs font-semibold text-white hover:bg-emerald-800 transition-colors shadow-xs cursor-pointer"
             >
               <Plus className="h-4 w-4" />
-              <span>Add Account Category</span>
+              <span>{t('Add Account Category')}</span>
             </button>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs">
               <h4 className="text-xs font-bold text-emerald-800 uppercase tracking-wider mb-3 pb-2 border-b border-slate-100">
-                Income Categories (Ledger Heads)
+                {t('Income Categories (Ledger Heads)')}
               </h4>
               <ul className="space-y-2 text-xs">
                 {accountCategoriesFull
@@ -869,33 +859,27 @@ export const SettingsPage: React.FC = () => {
                       className="flex items-center justify-between p-2.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-800 font-medium"
                     >
                       <div className="flex flex-col">
-                        <span>{cat.name}</span>
+                        <span>{t(cat.name)}</span>
                         {cat.description && (
                           <span className="text-[10px] text-slate-400 font-normal">{cat.description}</span>
                         )}
                       </div>
                       <div className="flex items-center gap-2">
                         <span className={`inline-block px-1.5 py-0.5 rounded text-[9px] font-bold ${cat.status === 'Active' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-slate-100 text-slate-400 border border-slate-200'}`}>
-                          {cat.status}
+                          {t(cat.status)}
                         </span>
                         <div className="flex items-center gap-0.5">
                           <button
                             onClick={() => openEditCat(cat)}
                             className="p-1 text-slate-400 hover:text-emerald-700 rounded-md hover:bg-white border border-transparent hover:border-slate-200 cursor-pointer"
+                            title={t('Edit')}
                           >
                             <Edit2 className="h-3 w-3" />
                           </button>
                           <button
-                            onClick={async () => {
-                              if (confirm(`Are you sure you want to delete category "${cat.name}"?`)) {
-                                try {
-                                  await deleteAccountCategory(cat.id);
-                                } catch (err: any) {
-                                  alert(err.message || 'Failed to delete category.');
-                                }
-                              }
-                            }}
+                            onClick={() => setDeletingCat(cat)}
                             className="p-1 text-slate-400 hover:text-red-700 rounded-md hover:bg-white border border-transparent hover:border-slate-200 cursor-pointer"
+                            title={t('Delete')}
                           >
                             <Trash2 className="h-3 w-3" />
                           </button>
@@ -908,7 +892,7 @@ export const SettingsPage: React.FC = () => {
 
             <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs">
               <h4 className="text-xs font-bold text-amber-800 uppercase tracking-wider mb-3 pb-2 border-b border-slate-100">
-                Expense Categories (Voucher Heads)
+                {t('Expense Categories (Voucher Heads)')}
               </h4>
               <ul className="space-y-2 text-xs">
                 {accountCategoriesFull
@@ -919,33 +903,27 @@ export const SettingsPage: React.FC = () => {
                       className="flex items-center justify-between p-2.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-800 font-medium"
                     >
                       <div className="flex flex-col">
-                        <span>{cat.name}</span>
+                        <span>{t(cat.name)}</span>
                         {cat.description && (
                           <span className="text-[10px] text-slate-400 font-normal">{cat.description}</span>
                         )}
                       </div>
                       <div className="flex items-center gap-2">
                         <span className={`inline-block px-1.5 py-0.5 rounded text-[9px] font-bold ${cat.status === 'Active' ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-slate-100 text-slate-400 border border-slate-200'}`}>
-                          {cat.status}
+                          {t(cat.status)}
                         </span>
                         <div className="flex items-center gap-0.5">
                           <button
                             onClick={() => openEditCat(cat)}
                             className="p-1 text-slate-400 hover:text-emerald-700 rounded-md hover:bg-white border border-transparent hover:border-slate-200 cursor-pointer"
+                            title={t('Edit')}
                           >
                             <Edit2 className="h-3 w-3" />
                           </button>
                           <button
-                            onClick={async () => {
-                              if (confirm(`Are you sure you want to delete category "${cat.name}"?`)) {
-                                try {
-                                  await deleteAccountCategory(cat.id);
-                                } catch (err: any) {
-                                  alert(err.message || 'Failed to delete category.');
-                                }
-                              }
-                            }}
+                            onClick={() => setDeletingCat(cat)}
                             className="p-1 text-slate-400 hover:text-red-700 rounded-md hover:bg-white border border-transparent hover:border-slate-200 cursor-pointer"
+                            title={t('Delete')}
                           >
                             <Trash2 className="h-3 w-3" />
                           </button>
@@ -1364,13 +1342,13 @@ export const SettingsPage: React.FC = () => {
       <Modal
         isOpen={isAddClassModalOpen}
         onClose={() => setIsAddClassModalOpen(false)}
-        title="Add Academic Class"
-        subtitle="Define a new curriculum level"
+        title={t('Add Academic Class')}
+        subtitle={t('Define a new curriculum level')}
         maxWidth="sm"
       >
         <form onSubmit={handleCreateClass} className="space-y-4 text-xs">
           <div>
-            <label className="block font-semibold text-slate-700 mb-1">Class Name</label>
+            <label className="block font-semibold text-slate-700 mb-1">{t('Class Name')}</label>
             <input
               type="text"
               required
@@ -1382,7 +1360,7 @@ export const SettingsPage: React.FC = () => {
           </div>
 
           <div>
-            <label className="block font-semibold text-slate-700 mb-1">Class Teacher</label>
+            <label className="block font-semibold text-slate-700 mb-1">{t('Class Teacher')}</label>
             <input
               type="text"
               placeholder="e.g. Maulana Ibrahim"
@@ -1393,7 +1371,7 @@ export const SettingsPage: React.FC = () => {
           </div>
 
           <div>
-            <label className="block font-semibold text-slate-700 mb-1">Standard Monthly Fee (৳)</label>
+            <label className="block font-semibold text-slate-700 mb-1">{t('Standard Monthly Fee (৳)')}</label>
             <input
               type="number"
               min="0"
@@ -1405,7 +1383,7 @@ export const SettingsPage: React.FC = () => {
           </div>
 
           <div>
-            <label className="block font-semibold text-slate-700 mb-1">Allowed Sections (Comma separated)</label>
+            <label className="block font-semibold text-slate-700 mb-1">{t('Allowed Sections (Comma separated)')}</label>
             <input
               type="text"
               required
@@ -1422,13 +1400,13 @@ export const SettingsPage: React.FC = () => {
               onClick={() => setIsAddClassModalOpen(false)}
               className="rounded-lg border border-slate-200 px-4 py-2 font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
             >
-              Cancel
+              {t('Cancel')}
             </button>
             <button
               type="submit"
               className="rounded-lg bg-emerald-700 px-4 py-2 font-semibold text-white hover:bg-emerald-800 cursor-pointer"
             >
-              Create Class
+              {t('Create Class')}
             </button>
           </div>
         </form>
@@ -1441,13 +1419,13 @@ export const SettingsPage: React.FC = () => {
           setIsEditClassModalOpen(false);
           setEditingClass(null);
         }}
-        title="Edit Academic Class"
+        title={t('Edit Academic Class')}
         subtitle={`Update configurations for ${editingClass?.name}`}
         maxWidth="sm"
       >
         <form onSubmit={handleUpdateClassSubmit} className="space-y-4 text-xs">
           <div>
-            <label className="block font-semibold text-slate-700 mb-1">Class Name</label>
+            <label className="block font-semibold text-slate-700 mb-1">{t('Class Name')}</label>
             <input
               type="text"
               required
@@ -1458,7 +1436,7 @@ export const SettingsPage: React.FC = () => {
           </div>
 
           <div>
-            <label className="block font-semibold text-slate-700 mb-1">Class Teacher</label>
+            <label className="block font-semibold text-slate-700 mb-1">{t('Class Teacher')}</label>
             <input
               type="text"
               value={classFormTeacher}
@@ -1468,7 +1446,7 @@ export const SettingsPage: React.FC = () => {
           </div>
 
           <div>
-            <label className="block font-semibold text-slate-700 mb-1">Standard Monthly Fee (৳)</label>
+            <label className="block font-semibold text-slate-700 mb-1">{t('Standard Monthly Fee (৳)')}</label>
             <input
               type="number"
               min="0"
@@ -1480,7 +1458,7 @@ export const SettingsPage: React.FC = () => {
           </div>
 
           <div>
-            <label className="block font-semibold text-slate-700 mb-1">Allowed Sections (Comma separated)</label>
+            <label className="block font-semibold text-slate-700 mb-1">{t('Allowed Sections (Comma separated)')}</label>
             <input
               type="text"
               required
@@ -1499,13 +1477,13 @@ export const SettingsPage: React.FC = () => {
               }}
               className="rounded-lg border border-slate-200 px-4 py-2 font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
             >
-              Cancel
+              {t('Cancel')}
             </button>
             <button
               type="submit"
               className="rounded-lg bg-emerald-700 px-4 py-2 font-semibold text-white hover:bg-emerald-800 cursor-pointer"
             >
-              Save Changes
+              {t('Save Changes')}
             </button>
           </div>
         </form>
@@ -1661,6 +1639,158 @@ export const SettingsPage: React.FC = () => {
             </button>
           </div>
         </form>
+      </Modal>
+
+      {/* Delete User Confirmation Modal */}
+      <Modal
+        isOpen={Boolean(deletingUser)}
+        onClose={() => setDeletingUser(null)}
+        title={t('Delete User Account')}
+        subtitle={`Are you sure you want to revoke/delete the user account for "${deletingUser?.name}"?`}
+        maxWidth="sm"
+      >
+        <div className="space-y-4 text-xs">
+          <p className="text-slate-600">
+            This action will remove user access from the console.
+          </p>
+          <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+            <button
+              type="button"
+              onClick={() => setDeletingUser(null)}
+              className="rounded-lg border border-slate-200 px-4 py-2 font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
+            >
+              {t('Cancel')}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                if (deletingUser) {
+                  deleteUser(deletingUser.id);
+                  setDeletingUser(null);
+                }
+              }}
+              className="rounded-lg bg-red-600 px-4 py-2 font-semibold text-white hover:bg-red-700 cursor-pointer"
+            >
+              {t('Delete')}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Delete Academic Year Confirmation Modal */}
+      <Modal
+        isOpen={Boolean(deletingAy)}
+        onClose={() => setDeletingAy(null)}
+        title={t('Delete Academic Year')}
+        subtitle={`Are you sure you want to permanently delete Academic Year "${deletingAy?.year}"?`}
+        maxWidth="sm"
+      >
+        <div className="space-y-4 text-xs">
+          <p className="text-slate-600">
+            This action cannot be undone.
+          </p>
+          <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+            <button
+              type="button"
+              onClick={() => setDeletingAy(null)}
+              className="rounded-lg border border-slate-200 px-4 py-2 font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
+            >
+              {t('Cancel')}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                if (deletingAy) {
+                  deleteAcademicYear(deletingAy.id);
+                  setDeletingAy(null);
+                }
+              }}
+              className="rounded-lg bg-red-600 px-4 py-2 font-semibold text-white hover:bg-red-700 cursor-pointer"
+            >
+              {t('Delete')}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Delete Class Confirmation Modal */}
+      <Modal
+        isOpen={Boolean(deletingClass)}
+        onClose={() => setDeletingClass(null)}
+        title={t('Delete Academic Class')}
+        subtitle={`Are you sure you want to delete class "${deletingClass?.name}"? This action is permanent.`}
+        maxWidth="sm"
+      >
+        <div className="space-y-4 text-xs">
+          <p className="text-slate-600">
+            This will remove the class from the curriculum catalog.
+          </p>
+          <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+            <button
+              type="button"
+              onClick={() => setDeletingClass(null)}
+              className="rounded-lg border border-slate-200 px-4 py-2 font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
+            >
+              {t('Cancel')}
+            </button>
+            <button
+              type="button"
+              onClick={async () => {
+                if (deletingClass) {
+                  try {
+                    await deleteClass(deletingClass.id);
+                    setDeletingClass(null);
+                  } catch (err: any) {
+                    alert(err.message || 'Failed to delete class.');
+                  }
+                }
+              }}
+              className="rounded-lg bg-red-600 px-4 py-2 font-semibold text-white hover:bg-red-700 cursor-pointer"
+            >
+              {t('Delete')}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Delete Category Confirmation Modal */}
+      <Modal
+        isOpen={Boolean(deletingCat)}
+        onClose={() => setDeletingCat(null)}
+        title={t('Delete Account Category')}
+        subtitle={`Are you sure you want to delete category "${deletingCat?.name}"?`}
+        maxWidth="sm"
+      >
+        <div className="space-y-4 text-xs">
+          <p className="text-slate-600">
+            This will remove the account category head.
+          </p>
+          <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+            <button
+              type="button"
+              onClick={() => setDeletingCat(null)}
+              className="rounded-lg border border-slate-200 px-4 py-2 font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
+            >
+              {t('Cancel')}
+            </button>
+            <button
+              type="button"
+              onClick={async () => {
+                if (deletingCat) {
+                  try {
+                    await deleteAccountCategory(deletingCat.id);
+                    setDeletingCat(null);
+                  } catch (err: any) {
+                    alert(err.message || 'Failed to delete category.');
+                  }
+                }
+              }}
+              className="rounded-lg bg-red-600 px-4 py-2 font-semibold text-white hover:bg-red-700 cursor-pointer"
+            >
+              {t('Delete')}
+            </button>
+          </div>
+        </div>
       </Modal>
     </div>
   );

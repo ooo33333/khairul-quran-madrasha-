@@ -117,7 +117,7 @@ const AppContent: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 flex">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/40 to-indigo-50/30 text-slate-900 flex relative overflow-hidden">
       {/* Toast Notifications */}
       <NotificationToast />
 
@@ -139,7 +139,7 @@ const AppContent: React.FC = () => {
 
       {/* Main Content Area */}
       <div
-        className={`flex-1 flex flex-col min-w-0 transition-all duration-200 ${
+        className={`flex-1 flex flex-col min-w-0 transition-all duration-200 z-10 ${
           isSidebarCollapsed ? 'lg:pl-0' : 'lg:pl-0'
         }`}
       >
@@ -147,7 +147,7 @@ const AppContent: React.FC = () => {
         <Header pageTitle={getPageTitle()} />
 
         {/* Page Content Viewport */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
+        <main className="flex-1 overflow-x-hidden overflow-y-auto p-4 sm:p-6 lg:p-8">
           {renderActivePage()}
         </main>
       </div>
@@ -155,7 +155,7 @@ const AppContent: React.FC = () => {
   );
 };
 
-export default function App() {
+export function App() {
   return (
     <AuthProvider>
       <AppProvider>
@@ -164,3 +164,5 @@ export default function App() {
     </AuthProvider>
   );
 }
+
+export default App;

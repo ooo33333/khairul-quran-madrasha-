@@ -25,58 +25,58 @@ export const StatCard: React.FC<StatCardProps> = ({
 }) => {
   const { t } = useApp();
 
-  const accentBorders = {
-    emerald: 'border-l-4 border-emerald-500 shadow-md shadow-emerald-500/5 hover:shadow-emerald-500/15',
-    amber: 'border-l-4 border-amber-500 shadow-md shadow-amber-500/5 hover:shadow-amber-500/15',
-    blue: 'border-l-4 border-blue-600 shadow-md shadow-blue-600/5 hover:shadow-blue-600/15',
-    indigo: 'border-l-4 border-indigo-600 shadow-md shadow-indigo-600/5 hover:shadow-indigo-600/15',
-    purple: 'border-l-4 border-purple-600 shadow-md shadow-purple-600/5 hover:shadow-purple-600/15',
-    slate: 'border-l-4 border-slate-700 shadow-md shadow-slate-900/5 hover:shadow-slate-900/15',
+  const iconBgClasses = {
+    emerald: 'bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/25',
+    amber: 'bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-lg shadow-amber-500/25',
+    blue: 'bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/25',
+    indigo: 'bg-gradient-to-br from-indigo-600 to-violet-700 text-white shadow-lg shadow-indigo-500/25',
+    purple: 'bg-gradient-to-br from-purple-600 to-fuchsia-700 text-white shadow-lg shadow-purple-500/25',
+    slate: 'bg-gradient-to-br from-slate-700 to-slate-900 text-white shadow-lg shadow-slate-900/25',
   }[accentColor];
 
-  const iconBgClasses = {
-    emerald: 'bg-emerald-50 text-emerald-600 border border-emerald-200/60',
-    amber: 'bg-amber-50 text-amber-600 border border-amber-200/60',
-    blue: 'bg-blue-50 text-blue-600 border border-blue-200/60',
-    indigo: 'bg-indigo-50 text-indigo-600 border border-indigo-200/60',
-    purple: 'bg-purple-50 text-purple-600 border border-purple-200/60',
-    slate: 'bg-slate-100 text-slate-700 border border-slate-200',
+  const valueColors = {
+    emerald: 'text-emerald-700',
+    amber: 'text-amber-700',
+    blue: 'text-blue-700',
+    indigo: 'text-indigo-700',
+    purple: 'text-purple-700',
+    slate: 'text-slate-800',
   }[accentColor];
 
   return (
     <div
       onClick={onClick}
-      className={`rounded-2xl border border-slate-200/90 bg-white p-5 transition-all duration-300 transform hover:-translate-y-0.5 ${accentBorders} ${
-        onClick ? 'cursor-pointer' : ''
+      className={`rotating-border-card p-5 cursor-pointer select-none ${
+        onClick ? 'hover:scale-[1.02]' : ''
       }`}
     >
       <div className="flex items-start justify-between">
-        <div className="space-y-1">
-          <p className="text-xs font-bold uppercase tracking-wider text-slate-500">{t(title)}</p>
-          <p className="text-2xl font-black tracking-tight text-slate-900 tabular-nums font-sans">
+        <div className="space-y-1.5">
+          <p className="text-xs font-bold uppercase tracking-wider text-slate-600">{t(title)}</p>
+          <p className={`text-2xl font-black tracking-tight tabular-nums font-sans ${valueColors}`}>
             {value}
           </p>
         </div>
         {icon && (
-          <div className={`flex h-11 w-11 items-center justify-center rounded-xl shadow-xs ${iconBgClasses}`}>
+          <div className={`flex h-12 w-12 items-center justify-center rounded-2xl ${iconBgClasses}`}>
             {icon}
           </div>
         )}
       </div>
 
       {(subtitle || trend) && (
-        <div className="mt-3 flex items-center gap-2 text-xs text-slate-500 font-medium">
+        <div className="mt-4 flex items-center gap-2 text-xs text-slate-600 font-semibold pt-2 border-t border-slate-100">
           {trend && (
             <span
-              className={`font-semibold tabular-nums ${
-                trend.isPositive ? 'text-emerald-600' : 'text-slate-600'
+              className={`font-bold tabular-nums px-2 py-0.5 rounded-md ${
+                trend.isPositive ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
               }`}
             >
               {trend.value}
             </span>
           )}
-          {trend && subtitle && <span aria-hidden="true">·</span>}
-          {subtitle && <span>{t(subtitle)}</span>}
+          {trend && subtitle && <span aria-hidden="true" className="text-slate-300">·</span>}
+          {subtitle && <span className="truncate">{t(subtitle)}</span>}
         </div>
       )}
     </div>

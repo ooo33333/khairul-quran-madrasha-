@@ -19,12 +19,14 @@ import {
   Eye,
   TrendingUp,
   X,
+  BarChart2,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { AccountTransaction } from '../../types';
 import { Breadcrumb } from '../../components/common/Breadcrumb';
 import { StatCard } from '../../components/common/StatCard';
 import { Modal } from '../../components/common/Modal';
+import { AccountsReportModal } from '../../components/common/AccountsReportModal';
 
 const STATUS_OPTIONS = ['Completed', 'Pending', 'Cancelled'];
 const PAYMENT_METHODS = ['Cash', 'Bank', 'Mobile Banking', 'Other'];
@@ -59,8 +61,41 @@ export const AccountsPage: React.FC = () => {
     deleteTransaction,
     accountCategories,
     searchQuery,
+    language,
     t,
   } = useApp();
+
+  const translateMethod = (method: string, lang: string) => {
+    if (lang !== 'bn') return method;
+    const map: Record<string, string> = {
+      'Cash': 'নগদ',
+      'Bank': 'ব্যাংক',
+      'Mobile Banking': 'মোবাইল ব্যাংকিং',
+      'Other': 'অন্যান্য'
+    };
+    return map[method] || method;
+  };
+
+  const translateStatus = (status: string, lang: string) => {
+    if (lang !== 'bn') return status;
+    const map: Record<string, string> = {
+      'Completed': 'সম্পন্ন',
+      'Pending': 'অপেক্ষমাণ',
+      'Cancelled': 'বাতিলকৃত'
+    };
+    return map[status] || status;
+  };
+
+  const translateType = (type: string, lang: string) => {
+    if (lang !== 'bn') return type;
+    const map: Record<string, string> = {
+      'income': 'আয়',
+      'expense': 'ব্যয়',
+      'Income': 'আয়',
+      'Expense': 'ব্যয়'
+    };
+    return map[type] || type;
+  };
 
   const [localSearch, setLocalSearch] = useState('');
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState('All');
@@ -72,6 +107,7 @@ export const AccountsPage: React.FC = () => {
 
   // Modals state
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [addModalType, setAddModalType] = useState<'income' | 'expense'>('income');
 
   // Add Form State
@@ -354,32 +390,32 @@ export const AccountsPage: React.FC = () => {
 
   const subPageTitles: Record<string, { title: string; subtitle: string }> = {
     income: {
-      title: 'Income Management',
-      subtitle: 'Record operational donations, tuition receipts, grants, and miscellaneous revenues',
+      title: language === 'bn' ? 'আয় ব্যবস্থাপনা' : 'Income Management',
+      subtitle: language === 'bn' ? 'প্রাতিষ্ঠানিক অনুদান, টিউশন ফি এবং অন্যান্য আয় রেকর্ড করুন' : 'Record operational donations, tuition receipts, grants, and miscellaneous revenues',
     },
     expense: {
-      title: 'Expense Management',
-      subtitle: 'Monitor salary honorariums, utility bills, campus rent, and office outlays',
+      title: language === 'bn' ? 'ব্যয় ব্যবস্থাপনা' : 'Expense Management',
+      subtitle: language === 'bn' ? 'শিক্ষকদের বেতন, বিদ্যুৎ বিল, ক্যাম্পাস ভাড়া এবং অন্যান্য খরচ মনিটর করুন' : 'Monitor salary honorariums, utility bills, campus rent, and office outlays',
     },
     transactions: {
-      title: 'Ledger Ledger / Transactions',
-      subtitle: 'Comprehensive general ledger journal representing audit-ready cashflow logs',
+      title: language === 'bn' ? 'সকল লেনদেনসমূহ' : 'Ledger / Transactions',
+      subtitle: language === 'bn' ? 'অডিট উপযোগী সার্বিক ক্যাশফ্লো ও লেনদেনের মাস্টার খতিয়ান' : 'Comprehensive general ledger journal representing audit-ready cashflow logs',
     },
     balance: {
-      title: 'General Accounts Balance',
-      subtitle: 'Surplus calculations, net solvency margins, and category-wise cash distributions',
+      title: language === 'bn' ? 'জমা-খরচের বর্তমান স্থিতি' : 'General Accounts Balance',
+      subtitle: language === 'bn' ? 'নেট উদ্বৃত্ত হিসাব এবং খাত অনুযায়ী নগদ অর্থ বিতরণ' : 'Surplus calculations, net solvency margins, and category-wise cash distributions',
     },
   };
 
   const currentMeta = subPageTitles[activeSubItem] || {
-    title: 'General Accounts',
-    subtitle: 'Consolidated master accounting ledger and financial reserves',
+    title: language === 'bn' ? 'সাধারণ হিসাবখাত' : 'General Accounts',
+    subtitle: language === 'bn' ? 'সমন্বিত মাস্টার অ্যাকাউন্ট লেজার এবং আর্থিক রিজার্ভ' : 'Consolidated master accounting ledger and financial reserves',
   };
 
   return (
     <div className="space-y-6">
       <Breadcrumb
-        sectionTitle="Accounts"
+        sectionTitle={language === 'bn' ? 'হিসাবখাত' : 'Accounts'}
         subItemTitle={currentMeta.title}
         sectionKey="accounts"
         subItemKey={activeSubItem}
@@ -393,6 +429,13 @@ export const AccountsPage: React.FC = () => {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={() => setIsReportModalOpen(true)}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 px-3.5 py-2 text-xs font-semibold text-white shadow-xs hover:from-blue-700 hover:to-indigo-700 transition-all cursor-pointer"
+          >
+            <BarChart2 className="h-4 w-4" />
+            <span>{language === 'bn' ? '📊 হিসাব রিপোর্ট ও ডাউনলোড' : 'Accounts Report & Download'}</span>
+          </button>
           <button
             onClick={() => openAddForm('income')}
             className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-700 px-3.5 py-2 text-xs font-semibold text-white hover:bg-emerald-800 shadow-xs transition-colors cursor-pointer"
@@ -413,23 +456,23 @@ export const AccountsPage: React.FC = () => {
       {/* Financial Position Summary Cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <StatCard
-          title={t('Total General Income')}
+          title={language === 'bn' ? 'মোট সাধারণ আয়' : t('Total General Income')}
           value={`৳${totalIncome.toLocaleString()}`}
-          subtitle={t('Cumulative income entries')}
+          subtitle={language === 'bn' ? 'সর্বমোট আয় এন্ট্রি' : t('Cumulative income entries')}
           icon={<ArrowUpRight className="h-5 w-5 text-emerald-700" />}
           accentColor="emerald"
         />
         <StatCard
-          title={t('Total General Expense')}
+          title={language === 'bn' ? 'মোট সাধারণ ব্যয়' : t('Total General Expense')}
           value={`৳${totalExpense.toLocaleString()}`}
-          subtitle={t('Cumulative expense entries')}
+          subtitle={language === 'bn' ? 'সর্বমোট ব্যয় এন্ট্রি' : t('Cumulative expense entries')}
           icon={<ArrowDownRight className="h-5 w-5 text-amber-700" />}
           accentColor="amber"
         />
         <StatCard
-          title={t('Net Operating Balance')}
+          title={language === 'bn' ? 'নিট পরিচালন স্থিতি' : t('Net Operating Balance')}
           value={`৳${currentBalance.toLocaleString()}`}
-          subtitle={t('Surplus operating balance')}
+          subtitle={language === 'bn' ? 'উদ্বৃত্ত পরিচালন স্থিতি' : t('Surplus operating balance')}
           icon={<TrendingUp className="h-5 w-5 text-sky-700" />}
           accentColor="blue"
         />
@@ -439,12 +482,12 @@ export const AccountsPage: React.FC = () => {
       {activeSubItem === 'balance' && (
         <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-xs space-y-5">
           <h3 className="text-sm font-bold text-slate-900 border-b border-slate-100 pb-2">
-            General Accounts Balance Formula
+            {language === 'bn' ? 'সাধারণ হিসাবখাত ব্যালেন্সের হিসাব সমীকরণ' : 'General Accounts Balance Formula'}
           </h3>
 
           <div className="flex flex-col lg:flex-row items-center justify-between gap-4 p-5 rounded-xl bg-slate-50 border border-slate-200">
             <div className="text-center lg:text-left">
-              <span className="text-xs text-slate-500 font-semibold uppercase">Completed Incomes</span>
+              <span className="text-xs text-slate-500 font-semibold uppercase">{language === 'bn' ? 'সম্পন্ন আয়সমূহ' : 'Completed Incomes'}</span>
               <p className="text-2xl font-bold text-emerald-700 font-mono mt-0.5">
                 +৳{totalIncome.toLocaleString()}
               </p>
@@ -453,7 +496,7 @@ export const AccountsPage: React.FC = () => {
             <span className="text-xl font-bold text-slate-400">−</span>
 
             <div className="text-center lg:text-left">
-              <span className="text-xs text-slate-500 font-semibold uppercase">Completed Expenses</span>
+              <span className="text-xs text-slate-500 font-semibold uppercase">{language === 'bn' ? 'সম্পন্ন ব্যয়সমূহ' : 'Completed Expenses'}</span>
               <p className="text-2xl font-bold text-amber-700 font-mono mt-0.5">
                 -৳{totalExpense.toLocaleString()}
               </p>
@@ -462,7 +505,7 @@ export const AccountsPage: React.FC = () => {
             <span className="text-xl font-bold text-slate-400">=</span>
 
             <div className="text-center lg:text-left bg-white px-5 py-3 rounded-lg border border-slate-200 shadow-xs">
-              <span className="text-xs text-sky-800 font-bold uppercase">Net Solvent General Reserve</span>
+              <span className="text-xs text-sky-800 font-bold uppercase">{language === 'bn' ? 'নিট সংরক্ষিত জের' : 'Net Solvent General Reserve'}</span>
               <p className="text-2xl font-black text-slate-900 font-mono mt-0.5">
                 ৳{currentBalance.toLocaleString()}
               </p>
@@ -473,7 +516,7 @@ export const AccountsPage: React.FC = () => {
           {categorySummary.length > 0 && (
             <div className="space-y-3 pt-2">
               <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                Distribution by Category (Completed)
+                {language === 'bn' ? 'খাত অনুযায়ী বিতরণ (সম্পন্ন)' : 'Distribution by Category (Completed)'}
               </h4>
               <div className="space-y-2">
                 {categorySummary.map(([cat, amount]) => {
@@ -482,7 +525,7 @@ export const AccountsPage: React.FC = () => {
                   return (
                     <div key={cat} className="space-y-1">
                       <div className="flex justify-between text-xs font-medium">
-                        <span className="text-slate-600">{cat}</span>
+                        <span className="text-slate-600">{language === 'bn' ? t(cat) : cat}</span>
                         <span className="text-slate-950 font-bold font-mono">৳{amount.toLocaleString()}</span>
                       </div>
                       <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
@@ -511,13 +554,13 @@ export const AccountsPage: React.FC = () => {
                 type="text"
                 value={localSearch}
                 onChange={(e) => setLocalSearch(e.target.value)}
-                placeholder="Search description, reference, category..."
+                placeholder={language === 'bn' ? 'বিবরণ, রেফারেন্স বা খাত দিয়ে খুঁজুন...' : 'Search description, reference, category...'}
                 className="w-full rounded-lg border border-slate-200 bg-slate-50 py-1.5 pl-8 pr-3 text-xs text-slate-900 placeholder-slate-400 focus:outline-hidden focus:bg-white focus:border-emerald-600 transition-all"
               />
             </div>
 
             <span className="text-xs font-medium text-slate-500">
-              {filteredTransactions.length} items matched
+              {language === 'bn' ? `${filteredTransactions.length}টি রেকর্ড মিলেছে` : `${filteredTransactions.length} items matched`}
             </span>
           </div>
 
@@ -525,7 +568,7 @@ export const AccountsPage: React.FC = () => {
             {/* Type Filter (only on Transactions and Balance page) */}
             {(activeSubItem === 'transactions' || activeSubItem === 'balance') && (
               <div className="flex items-center gap-1.5 text-xs">
-                <span className="font-medium text-slate-500">Type:</span>
+                <span className="font-medium text-slate-500">{language === 'bn' ? 'ধরণ:' : 'Type:'}</span>
                 <select
                   value={selectedTypeFilter}
                   onChange={(e) => {
@@ -534,77 +577,77 @@ export const AccountsPage: React.FC = () => {
                   }}
                   className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 font-medium text-slate-700 focus:outline-hidden"
                 >
-                  <option value="All">All Types</option>
-                  <option value="income">Income</option>
-                  <option value="expense">Expense</option>
+                  <option value="All">{language === 'bn' ? 'সকল ধরণ' : 'All Types'}</option>
+                  <option value="income">{language === 'bn' ? 'আয়' : 'Income'}</option>
+                  <option value="expense">{language === 'bn' ? 'ব্যয়' : 'Expense'}</option>
                 </select>
               </div>
             )}
 
             {/* Dynamic Category Filter */}
             <div className="flex items-center gap-1.5 text-xs">
-              <span className="font-medium text-slate-500">Category:</span>
+              <span className="font-medium text-slate-500">{language === 'bn' ? 'খাত:' : 'Category:'}</span>
               <select
                 value={selectedCategoryFilter}
                 onChange={(e) => setSelectedCategoryFilter(e.target.value)}
                 className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 font-medium text-slate-700 focus:outline-hidden"
               >
-                <option value="All">All Categories</option>
+                <option value="All">{language === 'bn' ? 'সকল খাত' : 'All Categories'}</option>
                 {/* Populate categories based on active view or type selection */}
                 {activeSubItem === 'income' || selectedTypeFilter.toLowerCase() === 'income'
                   ? resolvedCategories.income.map((c) => (
-                      <option key={c} value={c}>{c}</option>
+                      <option key={c} value={c}>{language === 'bn' ? t(c) : c}</option>
                     ))
                   : activeSubItem === 'expense' || selectedTypeFilter.toLowerCase() === 'expense'
                   ? resolvedCategories.expense.map((c) => (
-                      <option key={c} value={c}>{c}</option>
+                      <option key={c} value={c}>{language === 'bn' ? t(c) : c}</option>
                     ))
                   : [...resolvedCategories.income, ...resolvedCategories.expense].map((c) => (
-                      <option key={c} value={c}>{c}</option>
+                      <option key={c} value={c}>{language === 'bn' ? t(c) : c}</option>
                     ))}
               </select>
             </div>
 
             {/* Payment Method Filter */}
             <div className="flex items-center gap-1.5 text-xs">
-              <span className="font-medium text-slate-500">Payment:</span>
+              <span className="font-medium text-slate-500">{language === 'bn' ? 'পরিশোধ মাধ্যম:' : 'Payment:'}</span>
               <select
                 value={selectedPaymentFilter}
                 onChange={(e) => setSelectedPaymentFilter(e.target.value)}
                 className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 font-medium text-slate-700 focus:outline-hidden"
               >
-                <option value="All">All Methods</option>
+                <option value="All">{language === 'bn' ? 'সকল মাধ্যম' : 'All Methods'}</option>
                 {PAYMENT_METHODS.map((m) => (
-                  <option key={m} value={m}>{m}</option>
+                  <option key={m} value={m}>{translateMethod(m, language)}</option>
                 ))}
               </select>
             </div>
 
             {/* Status Filter */}
             <div className="flex items-center gap-1.5 text-xs">
-              <span className="font-medium text-slate-500">Status:</span>
+              <span className="font-medium text-slate-500">{language === 'bn' ? 'অবস্থা:' : 'Status:'}</span>
               <select
                 value={selectedStatusFilter}
                 onChange={(e) => setSelectedStatusFilter(e.target.value)}
                 className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 font-medium text-slate-700 focus:outline-hidden"
               >
-                <option value="All">All Statuses</option>
+                <option value="All">{language === 'bn' ? 'সকল অবস্থা' : 'All Statuses'}</option>
                 {STATUS_OPTIONS.map((s) => (
-                  <option key={s} value={s}>{s}</option>
+                  <option key={s} value={s}>{translateStatus(s, language)}</option>
                 ))}
               </select>
             </div>
 
             {/* Date Range filters */}
             <div className="flex items-center gap-1 text-xs">
-              <span className="font-medium text-slate-500">From:</span>
+              <span className="font-medium text-slate-500">{language === 'bn' ? 'তারিখ থেকে:' : 'From:'}</span>
               <input
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
                 className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-slate-700 focus:outline-hidden"
               />
-              <span className="font-medium text-slate-500">To:</span>
+              <span className="font-medium text-slate-500">{language === 'bn' ? 'তারিখ পর্যন্ত:' : 'To:'}</span>
               <input
                 type="date"
                 value={endDate}
@@ -633,7 +676,7 @@ export const AccountsPage: React.FC = () => {
                 className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
               >
                 <RotateCcw className="h-3.5 w-3.5" />
-                <span>Reset Filters</span>
+                <span>{language === 'bn' ? 'ফিল্টার রিসেট' : 'Reset Filters'}</span>
               </button>
             )}
           </div>
@@ -644,16 +687,16 @@ export const AccountsPage: React.FC = () => {
           <table className="w-full text-left text-xs">
             <thead className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
               <tr>
-                <th className="px-5 py-3.5">Date</th>
-                <th className="px-5 py-3.5">Transaction ID</th>
-                <th className="px-5 py-3.5">Type</th>
-                <th className="px-5 py-3.5">Category</th>
-                <th className="px-5 py-3.5">Description</th>
-                <th className="px-5 py-3.5 text-right">Amount</th>
-                <th className="px-5 py-3.5">Payment Method</th>
-                <th className="px-5 py-3.5">Ref / Slip</th>
-                <th className="px-5 py-3.5 text-center">Status</th>
-                <th className="px-5 py-3.5 text-right">Actions</th>
+                <th className="px-5 py-3.5">{language === 'bn' ? 'তারিখ' : 'Date'}</th>
+                <th className="px-5 py-3.5">{language === 'bn' ? 'লেনদেন আইডি' : 'Transaction ID'}</th>
+                <th className="px-5 py-3.5">{language === 'bn' ? 'ধরণ' : 'Type'}</th>
+                <th className="px-5 py-3.5">{language === 'bn' ? 'খাত' : 'Category'}</th>
+                <th className="px-5 py-3.5">{language === 'bn' ? 'বিবরণ' : 'Description'}</th>
+                <th className="px-5 py-3.5 text-right">{language === 'bn' ? 'টাকার পরিমাণ' : 'Amount'}</th>
+                <th className="px-5 py-3.5">{language === 'bn' ? 'পরিশোধের মাধ্যম' : 'Payment Method'}</th>
+                <th className="px-5 py-3.5">{language === 'bn' ? 'রেফ / স্লিপ' : 'Ref / Slip'}</th>
+                <th className="px-5 py-3.5 text-center">{language === 'bn' ? 'অবস্থা' : 'Status'}</th>
+                <th className="px-5 py-3.5 text-right">{language === 'bn' ? 'কার্যক্রম' : 'Actions'}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -682,11 +725,11 @@ export const AccountsPage: React.FC = () => {
                             isInc ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
                           }`}
                         >
-                          {tx.type}
+                          {translateType(tx.type, language)}
                         </span>
                       </td>
                       <td className="px-5 py-3.5 whitespace-nowrap text-slate-900 font-semibold">
-                        {tx.category}
+                        {language === 'bn' ? t(tx.category) : tx.category}
                       </td>
                       <td className="px-5 py-3.5 font-medium text-slate-600 max-w-xs truncate" title={tx.description}>
                         {tx.description}
@@ -699,7 +742,7 @@ export const AccountsPage: React.FC = () => {
                         {isInc ? '+' : '−'}৳{tx.amount.toLocaleString()}
                       </td>
                       <td className="px-5 py-3.5 whitespace-nowrap text-slate-600 font-semibold">
-                        {tx.paymentMethod || 'Cash'}
+                        {translateMethod(tx.paymentMethod || 'Cash', language)}
                       </td>
                       <td className="px-5 py-3.5 whitespace-nowrap font-mono text-slate-500 font-medium">
                         {tx.reference || tx.referenceNo || '-'}
@@ -714,28 +757,28 @@ export const AccountsPage: React.FC = () => {
                               : 'bg-rose-50 text-rose-700 border-rose-200'
                           }`}
                         >
-                          {tx.status}
+                          {translateStatus(tx.status, language)}
                         </span>
                       </td>
                       <td className="px-5 py-3.5 whitespace-nowrap text-right">
                         <div className="flex items-center justify-end gap-1.5">
                           <button
                             onClick={() => setViewTx(tx)}
-                            title="View Voucher"
+                            title={language === 'bn' ? 'ভাউচার দেখুন' : 'View Voucher'}
                             className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-colors cursor-pointer"
                           >
                             <Eye className="h-3.5 w-3.5" />
                           </button>
                           <button
                             onClick={() => openEditForm(tx)}
-                            title="Edit Record"
+                            title={language === 'bn' ? 'রেকর্ড সংশোধন করুন' : 'Edit Record'}
                             className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100 hover:text-emerald-700 transition-colors cursor-pointer"
                           >
                             <Edit2 className="h-3.5 w-3.5" />
                           </button>
                           <button
                             onClick={() => setDeletingTx(tx)}
-                            title="Delete Record"
+                            title={language === 'bn' ? 'রেকর্ড মুছে ফেলুন' : 'Delete Record'}
                             className="rounded-md p-1.5 text-slate-500 hover:bg-rose-50 hover:text-rose-700 transition-colors cursor-pointer"
                           >
                             <Trash2 className="h-3.5 w-3.5" />
@@ -751,8 +794,12 @@ export const AccountsPage: React.FC = () => {
                     <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-400 mb-2">
                       <FileText className="h-5 w-5" />
                     </div>
-                    <p className="text-xs font-semibold text-slate-600">No General Accounts records found in this view</p>
-                    <p className="text-[11px] text-slate-400 mt-0.5">Records are fully synchronized with Google Cloud Firestore.</p>
+                    <p className="text-xs font-semibold text-slate-600">
+                      {language === 'bn' ? 'এই ভিউতে কোনো হিসাবখাতের রেকর্ড পাওয়া যায়নি' : 'No General Accounts records found in this view'}
+                    </p>
+                    <p className="text-[11px] text-slate-400 mt-0.5">
+                      {language === 'bn' ? 'রেকর্ডগুলো গুগল ক্লাউড ফায়ারস্টোরের সাথে সম্পূর্ণরূপে সিঙ্ক করা হয়েছে।' : 'Records are fully synchronized with Google Cloud Firestore.'}
+                    </p>
                   </td>
                 </tr>
               )}
@@ -1204,6 +1251,12 @@ export const AccountsPage: React.FC = () => {
           </div>
         </Modal>
       )}
+
+      {/* Accounts Report & Download Modal */}
+      <AccountsReportModal
+        isOpen={isReportModalOpen}
+        onClose={() => setIsReportModalOpen(false)}
+      />
     </div>
   );
 };
