@@ -27,6 +27,10 @@ import {
   FeeStatus,
   FeeType,
   PaymentMethod,
+  Teacher,
+  TeacherNote,
+  StudentNote,
+  ExamResult,
 } from '../types';
 import {
   INITIAL_MADRASA_INFO,
@@ -207,6 +211,26 @@ interface AppContextType {
   updateAccountCategory: (id: string, updates: Partial<AccountCategory>) => Promise<void>;
   deleteAccountCategory: (id: string) => Promise<void>;
 
+  teachers: Teacher[];
+  teachersLoading: boolean;
+  addTeacher: (teacher: Omit<Teacher, 'id'> & { id?: string }) => Promise<Teacher>;
+  updateTeacher: (id: string, updates: Partial<Teacher>) => Promise<void>;
+  deleteTeacher: (id: string) => Promise<void>;
+
+  teacherNotes: TeacherNote[];
+  addTeacherNote: (note: TeacherNote) => Promise<void>;
+  deleteTeacherNote: (noteId: string) => Promise<void>;
+
+  studentNotes: StudentNote[];
+  addStudentNote: (note: StudentNote) => Promise<void>;
+  deleteStudentNote: (noteId: string) => Promise<void>;
+
+  examResults: ExamResult[];
+  examResultsLoading: boolean;
+  addExamResult: (result: Omit<ExamResult, 'id'>) => Promise<ExamResult>;
+  updateExamResult: (id: string, updates: Partial<ExamResult>) => Promise<void>;
+  deleteExamResult: (id: string) => Promise<void>;
+
   // Notifications
   notifications: ToastNotification[];
   addNotification: (
@@ -303,6 +327,71 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [transactions, setTransactions] = useState<AccountTransaction[]>([]);
   const [accountsLoading, setAccountsLoading] = useState<boolean>(true);
 
+  const [examResults, setExamResults] = useState<ExamResult[]>(() => {
+    try {
+      const saved = localStorage.getItem(`${STORAGE_KEY}_exam_results`);
+      return saved
+        ? JSON.parse(saved)
+        : [
+            {
+              id: 'EXAM-1001',
+              studentId: 'STU-1001',
+              studentName: 'আব্দুল্লাহ আল মামুন',
+              className: 'হিফজ বিভাগ',
+              section: 'ক',
+              examName: '১ম টার্ম পরীক্ষা ২০২৬',
+              academicYear: '২০২৬',
+              subjects: [
+                { subjectName: 'কুরআন মাজিদ ও তাজবীদ', fullMarks: 100, obtainedMarks: 85, grade: 'A+', gp: 5.0 },
+                { subjectName: 'আকাইদ ও ফিকহ', fullMarks: 100, obtainedMarks: 78, grade: 'A', gp: 4.0 },
+                { subjectName: 'আরবি সাহিত্য', fullMarks: 100, obtainedMarks: 82, grade: 'A+', gp: 5.0 },
+                { subjectName: 'বাংলা', fullMarks: 100, obtainedMarks: 75, grade: 'A', gp: 4.0 },
+                { subjectName: 'ইংরেজি', fullMarks: 100, obtainedMarks: 70, grade: 'A-', gp: 3.5 },
+                { subjectName: 'গণিত', fullMarks: 100, obtainedMarks: 88, grade: 'A+', gp: 5.0 },
+              ],
+              totalMarks: 600,
+              totalObtained: 478,
+              percentage: 79.67,
+              gpa: 4.42,
+              finalGrade: 'A+',
+              remarks: 'উত্তম ফলাফল! পড়াশোনায় আরও মনোযোগী হতে হবে।',
+              date: '2026-06-15',
+            },
+          ];
+    } catch {
+      return [];
+    }
+  });
+  const [examResultsLoading, setExamResultsLoading] = useState<boolean>(false);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(`${STORAGE_KEY}_exam_results`, JSON.stringify(examResults));
+    } catch (e) {
+      console.error(e);
+    }
+  }, [examResults]);
+
+  const addExamResult = async (result: Omit<ExamResult, 'id'>): Promise<ExamResult> => {
+    const newId = `EXAM-${Date.now().toString().slice(-6)}`;
+    const newRecord: ExamResult = { ...result, id: newId };
+    setExamResults((prev) => [newRecord, ...prev]);
+    addNotification('success', 'ফলাফল সংরক্ষিত', `${result.studentName}-এর পরীক্ষার ফলাফল সফলভাবে যোগ করা হয়েছে।`);
+    return newRecord;
+  };
+
+  const updateExamResult = async (id: string, updates: Partial<ExamResult>): Promise<void> => {
+    setExamResults((prev) =>
+      prev.map((r) => (r.id === id ? { ...r, ...updates, updatedAt: new Date().toISOString() } : r))
+    );
+    addNotification('success', 'ফলাফল আপডেট', `পরীক্ষার ফলাফল সফলভাবে হালনাগাদ করা হয়েছে।`);
+  };
+
+  const deleteExamResult = async (id: string): Promise<void> => {
+    setExamResults((prev) => prev.filter((r) => r.id !== id));
+    addNotification('info', 'ফলাফল মুছে ফেলা হয়েছে', `পরীক্ষার ফলাফল সফলভাবে মুছে ফেলা হয়েছে।`);
+  };
+
   const [madrasaInfo, setMadrasaInfo] = useState<MadrasaInfo>(() => {
     try {
       const saved = localStorage.getItem(`${STORAGE_KEY}_info`);
@@ -334,6 +423,107 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       expense: expense.length > 0 ? expense : INITIAL_ACCOUNT_CATEGORIES.expense,
     };
   }, [accountCategoriesFull]);
+
+  // Teachers and Notes State
+  const [teachers, setTeachers] = useState<Teacher[]>(() => {
+    try {
+      const saved = localStorage.getItem('madrasa_teachers');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return [
+      {
+        id: 'TCH-1001',
+        name: 'মাওলানা মুফতি হাবিবুর রহমান',
+        age: 38,
+        education: 'দাওরায়ে হাদিস, তাফসির বিভাগ',
+        previousEmployment: 'জামিয়া আরাবিয়া মাদরাসা (৮ বছর)',
+        joiningDate: '2023-01-10',
+        salary: 15000,
+        phone: '01811223344',
+        address: 'ঢাকা, বাংলাদেশ',
+        status: 'Active',
+        certificates: [],
+      },
+    ];
+  });
+  const [teachersLoading] = useState<boolean>(false);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('madrasa_teachers', JSON.stringify(teachers));
+    } catch {}
+  }, [teachers]);
+
+  const addTeacher = async (teacher: Omit<Teacher, 'id'> & { id?: string }) => {
+    const newTeacher: Teacher = {
+      ...teacher,
+      id: teacher.id || `TCH-${Date.now().toString().slice(-4)}`,
+      createdAt: new Date().toISOString(),
+    };
+    setTeachers((prev) => [newTeacher, ...prev]);
+    addNotification('success', 'Teacher Recruited', `Teacher ${newTeacher.name} successfully added.`);
+    return newTeacher;
+  };
+
+  const updateTeacher = async (id: string, updates: Partial<Teacher>) => {
+    setTeachers((prev) =>
+      prev.map((t) => (t.id === id ? { ...t, ...updates, updatedAt: new Date().toISOString() } : t))
+    );
+    addNotification('success', 'Teacher Updated', 'Teacher information successfully updated.');
+  };
+
+  const deleteTeacher = async (id: string) => {
+    setTeachers((prev) => prev.filter((t) => t.id !== id));
+    addNotification('success', 'Teacher Deleted', 'Teacher record removed.');
+  };
+
+  const [teacherNotes, setTeacherNotes] = useState<TeacherNote[]>(() => {
+    try {
+      const saved = localStorage.getItem('madrasa_teacher_notes');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return [];
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('madrasa_teacher_notes', JSON.stringify(teacherNotes));
+    } catch {}
+  }, [teacherNotes]);
+
+  const addTeacherNote = async (note: TeacherNote) => {
+    setTeacherNotes((prev) => [note, ...prev]);
+    addNotification('success', 'Note Added', 'Teacher performance note saved.');
+  };
+
+  const deleteTeacherNote = async (noteId: string) => {
+    setTeacherNotes((prev) => prev.filter((n) => n.id !== noteId));
+    addNotification('success', 'Note Deleted', 'Note removed.');
+  };
+
+  const [studentNotes, setStudentNotes] = useState<StudentNote[]>(() => {
+    try {
+      const saved = localStorage.getItem('madrasa_student_notes');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return [];
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('madrasa_student_notes', JSON.stringify(studentNotes));
+    } catch {}
+  }, [studentNotes]);
+
+  const addStudentNote = async (note: StudentNote) => {
+    setStudentNotes((prev) => [note, ...prev]);
+    addNotification('success', 'Student Note Added', 'Student behavior/achievement note saved.');
+  };
+
+  const deleteStudentNote = async (noteId: string) => {
+    setStudentNotes((prev) => prev.filter((n) => n.id !== noteId));
+    addNotification('success', 'Student Note Deleted', 'Note removed.');
+  };
 
   // Sync currentUser with AuthContext
   const [currentUser, setCurrentUser] = useState<UserAccount | null>(() => {
@@ -1057,12 +1247,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           break;
         case 'student-fees':
           setActiveSubItem('monthly-fees');
-          break;
-        case 'aib-account':
-          setActiveSubItem('aib-collection');
-          break;
-        case 'revolving-fund':
-          setActiveSubItem('fund-collection');
           break;
         case 'boarding':
           setActiveSubItem('boarding-students');
@@ -2141,6 +2325,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         addAccountCategory,
         updateAccountCategory,
         deleteAccountCategory,
+        teachers,
+        teachersLoading,
+        addTeacher,
+        updateTeacher,
+        deleteTeacher,
+        teacherNotes,
+        addTeacherNote,
+        deleteTeacherNote,
+        studentNotes,
+        addStudentNote,
+        deleteStudentNote,
+        examResults,
+        examResultsLoading,
+        addExamResult,
+        updateExamResult,
+        deleteExamResult,
         notifications,
         addNotification,
         dismissNotification,

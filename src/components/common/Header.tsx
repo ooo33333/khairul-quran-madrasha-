@@ -97,14 +97,23 @@ export const Header: React.FC<HeaderProps> = ({ pageTitle }) => {
           
           <h1 className="relative text-sm sm:text-lg md:text-xl font-bold tracking-tight text-white px-3 py-1 bg-slate-950/80 rounded-lg border border-blue-500/40 shadow-inner truncate max-w-[240px] sm:max-w-md">
             <span className="bg-gradient-to-r from-white via-blue-100 to-cyan-200 bg-clip-text text-transparent">
-              খায়রুল কুরআন মাদ্রাসা অফিস
+              খাইরুল কুরআন মাদ্রাসা অফিস
             </span>
           </h1>
         </div>
       </div>
 
-      {/* Right: PWA Install & Profile */}
+      {/* Right: Language Switcher, PWA Install & Profile */}
       <div className="flex items-center gap-2 sm:gap-3 z-10">
+        {/* Language Switcher */}
+        <button
+          onClick={() => setLanguage(language === 'bn' ? 'en' : 'bn')}
+          className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-blue-600/30 hover:bg-blue-600/50 border border-blue-400/40 text-cyan-200 text-xs font-bold transition-all shadow-xs cursor-pointer"
+          title="Switch Language (বাংলা / English)"
+        >
+          <span>{language === 'bn' ? 'English' : 'বাংলা'}</span>
+        </button>
+
         {/* PWA Install Button */}
         <PWAInstallButton />
 

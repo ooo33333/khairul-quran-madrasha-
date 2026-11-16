@@ -48,7 +48,8 @@ service cloud.firestore {
     // 2. Students collection
     match /students/{studentId} {
       allow read: if isSignedIn();
-      allow create, update: if isSignedIn();
+      allow create: if isSignedIn();
+      allow update: if isAdmin();
       allow delete: if isAdmin();
     }
 
@@ -58,8 +59,7 @@ service cloud.firestore {
       allow create: if isSignedIn() &&
         request.resource.data.keys().hasAll(['studentId', 'studentName', 'className', 'feeType', 'amount', 'paidAmount', 'dueAmount']) &&
         request.resource.data.amount is number && request.resource.data.amount >= 0;
-      allow update: if isSignedIn() &&
-        request.resource.data.studentId == resource.data.studentId;
+      allow update: if isAdmin();
       allow delete: if isAdmin();
     }
 
@@ -70,7 +70,7 @@ service cloud.firestore {
         request.resource.data.keys().hasAll(['transactionId', 'date', 'type', 'category', 'description', 'amount']) &&
         request.resource.data.amount is number && request.resource.data.amount > 0 &&
         (request.resource.data.type == 'collection' || request.resource.data.type == 'expense');
-      allow update: if isSignedIn();
+      allow update: if isAdmin();
       allow delete: if isAdmin();
     }
 
@@ -81,10 +81,7 @@ service cloud.firestore {
         request.resource.data.keys().hasAll(['transactionId', 'date', 'type', 'personName', 'amount', 'status']) &&
         request.resource.data.amount is number && request.resource.data.amount > 0 &&
         (request.resource.data.type == 'collection' || request.resource.data.type == 'distribution' || request.resource.data.type == 'return');
-      allow update: if isSignedIn() && (
-        isAdmin() ||
-        request.resource.data.transactionId == resource.data.transactionId
-      );
+      allow update: if isAdmin();
       allow delete: if isAdmin();
     }
 
@@ -94,8 +91,7 @@ service cloud.firestore {
       allow create: if isSignedIn() &&
         request.resource.data.keys().hasAll(['studentId', 'studentName', 'className', 'boardingStatus', 'room']) &&
         request.resource.data.studentName is string && request.resource.data.studentName.size() <= 120;
-      allow update: if isSignedIn() &&
-        request.resource.data.studentId == resource.data.studentId;
+      allow update: if isAdmin();
       allow delete: if isAdmin();
     }
 
@@ -117,7 +113,7 @@ service cloud.firestore {
         request.resource.data.keys().hasAll(['transactionId', 'date', 'type', 'category', 'description', 'amount']) &&
         request.resource.data.amount is number && request.resource.data.amount > 0 &&
         (request.resource.data.type == 'income' || request.resource.data.type == 'expense');
-      allow update: if isSignedIn();
+      allow update: if isAdmin();
       allow delete: if isAdmin();
     }
 

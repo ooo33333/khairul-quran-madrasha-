@@ -2,14 +2,15 @@ export type NavigationSection =
   | 'dashboard'
   | 'students'
   | 'student-fees'
-  | 'aib-account'
   | 'revolving-fund'
   | 'boarding'
   | 'accounts'
+  | 'exams'
   | 'settings';
 
 export type SubNavigationItem =
   // Students
+  | 'teacher-recruitment'
   | 'student-list'
   | 'student-admission'
   | 'student-information'
@@ -19,12 +20,7 @@ export type SubNavigationItem =
   | 'other-fees'
   | 'fee-collection'
   | 'due-fees'
-  // Aib Account
-  | 'aib-collection'
-  | 'aib-expense'
-  | 'aib-balance'
-  | 'aib-transactions'
-  // Revolving Fund
+  // Revolving Fund (গোরাবা তহবিল)
   | 'fund-collection'
   | 'fund-distribution'
   | 'fund-return'
@@ -41,6 +37,10 @@ export type SubNavigationItem =
   | 'expense'
   | 'transactions'
   | 'balance'
+  | 'yearly-monthly-daily'
+  // Exams & Results
+  | 'exam-marks'
+  | 'report-cards'
   // Settings
   | 'madrasa-information'
   | 'user-management'
@@ -50,7 +50,8 @@ export type SubNavigationItem =
   | 'login-logout'
   | 'reset-website-data'
   | 'refresh-reload'
-  | 'system-restart-reboot';
+  | 'system-restart-reboot'
+  | 'data-backup';
 
 export interface AdminUser {
   uid: string;
@@ -203,6 +204,12 @@ export interface FirestoreSettings {
   accountCategories: string;
 }
 
+export interface ContactPhone {
+  number: string;
+  relation: string;
+  whatsapp?: boolean;
+}
+
 export interface Student {
   id: string; // e.g. "STD-1001"
   name: string;
@@ -211,11 +218,15 @@ export interface Student {
   className: string;
   section: string;
   phone: string;
+  contactPhones?: ContactPhone[];
   dob?: string;
   address?: string;
   admissionDate: string;
   status: StudentStatus;
   photoUrl?: string;
+  admissionFormPhotoUrl?: string;
+  birthCertificatePhotoUrl?: string;
+  admissionFeePaid?: number;
   boarding?: boolean;
   roomNo?: string;
   guardianName?: string;
@@ -371,6 +382,7 @@ export interface MadrasaInfo {
   accountNumber: string;
   branch: string;
   logo?: string;
+  buildingPhoto?: string;
   description?: string;
 }
 
@@ -413,3 +425,78 @@ export interface AccountCategory {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface Teacher {
+  id: string;
+  name: string;
+  age: number | string;
+  education: string;
+  previousEmployment: string;
+  joiningDate: string;
+  salary: number;
+  phone: string; // primary phone
+  phones?: string[]; // multiple numbers
+  address: string;
+  photoUrl?: string; // passport photo
+  idCardPhotoUrl?: string; // NID card photo
+  certificatePhotoUrl?: string; // certificate photo
+  certificates?: string[];
+  guarantor?: {
+    name: string;
+    address: string;
+    phone: string;
+  };
+  status: 'Active' | 'Inactive' | 'Leave';
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface TeacherNote {
+  id: string;
+  teacherId: string;
+  date: string;
+  noteType: 'Good' | 'Bad' | 'Warning' | 'Appreciation' | 'General';
+  title: string;
+  description: string;
+  createdBy?: string;
+  createdAt: string;
+}
+
+export interface StudentNote {
+  id: string;
+  studentId: string;
+  date: string;
+  noteType: 'Crime/Discipline' | 'Achievement' | 'Warning' | 'General';
+  title: string;
+  description: string;
+  createdBy?: string;
+  createdAt: string;
+}
+
+export interface SubjectMark {
+  subjectName: string;
+  fullMarks: number;
+  obtainedMarks: number;
+  grade: string;
+  gp: number;
+}
+
+export interface ExamResult {
+  id: string;
+  studentId: string;
+  studentName: string;
+  className: string;
+  section: string;
+  examName: string; // e.g. "১ম টার্ম পরীক্ষা ২০২৬"
+  academicYear: string;
+  subjects: SubjectMark[];
+  totalMarks: number;
+  totalObtained: number;
+  percentage: number;
+  gpa: number;
+  finalGrade: string;
+  remarks: string;
+  date: string;
+  updatedAt?: string;
+}
+

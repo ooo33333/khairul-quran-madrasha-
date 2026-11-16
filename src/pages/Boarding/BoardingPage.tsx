@@ -28,36 +28,36 @@ import { Breadcrumb } from '../../components/common/Breadcrumb';
 import { StatCard } from '../../components/common/StatCard';
 import { Modal } from '../../components/common/Modal';
 
-const ROOM_OPTIONS = ['Dorm-A', 'Dorm-B', 'Dorm-C', 'Dorm-D', 'VIP Room', 'General Dorm'];
-const BOARDING_STATUS_OPTIONS = ['Active', 'Inactive', 'Left'];
-const PAYMENT_METHODS = ['Cash', 'Bank', 'Mobile Banking', 'Other'];
-const TRANSACTION_STATUSES = ['Completed', 'Pending', 'Cancelled'];
+const ROOM_OPTIONS = ['ডরমিটরি-এ', 'ডরমিটরি-বি', 'ডরমিটরি-সি', 'ডরমিটরি-ডি', 'ভিআইপি রুম', 'সাধারণ ডরমিটরি'];
+const BOARDING_STATUS_OPTIONS = ['সক্রিয় (Active)', 'নিষ্ক্রিয় (Inactive)', 'বিদায়ী (Left)'];
+const PAYMENT_METHODS = ['নগদ (Cash)', 'ব্যাংক (Bank)', 'মোবাইল ব্যাংকিং (Mobile Banking)', 'অন্যান্য'];
+const TRANSACTION_STATUSES = ['সম্পন্ন (Completed)', 'অপেক্ষমান (Pending)', 'বাতিল (Cancelled)'];
 
 const FOOD_EXPENSE_CATEGORIES = [
-  'Rice',
-  'Vegetables',
-  'Meat',
-  'Fish',
-  'Oil',
-  'Grocery',
-  'Gas',
-  'Other Food Expense',
+  'চাল',
+  'সবজি',
+  'গোশত',
+  'মাছ',
+  'তেল',
+  'মসলা ও মুদি',
+  'গ্যাস',
+  'অন্যান্য খাদ্য খরচ',
 ];
 
 const OTHER_EXPENSE_CATEGORIES = [
-  'Electricity',
-  'Water',
-  'Cleaning',
-  'Maintenance',
-  'Furniture',
-  'Medical',
-  'Other',
+  'বিদ্যুৎ বিল',
+  'পানি বিল',
+  'পরিচ্ছন্নতা',
+  'মেরামত ও রক্ষণাবেক্ষণ',
+  'আসবাবপত্র',
+  'চিকিৎসা',
+  'অন্যান্য',
 ];
 
 const FEE_CATEGORIES = [
-  'Monthly Boarding Fee',
-  'Food Fee',
-  'Other Boarding Fee',
+  'মাসিক বোর্ডিং ফি',
+  'খাবার ফি',
+  'অন্যান্য বোর্ডিং ফি',
 ];
 
 export const BoardingPage: React.FC = () => {
@@ -100,9 +100,9 @@ export const BoardingPage: React.FC = () => {
 
   // Add Student Form State
   const [addStudentId, setAddStudentOpenId] = useState('');
-  const [addRoom, setAddRoom] = useState('Dorm-A');
-  const [addBed, setAddBed] = useState('Bed-1');
-  const [addStatus, setAddStatus] = useState('Active');
+  const [addRoom, setAddRoom] = useState('ডরমিটরি-এ');
+  const [addBed, setAddBed] = useState('বেড-১');
+  const [addStatus, setAddStatus] = useState('সক্রিয় (Active)');
   const [addJoiningDate, setAddJoiningDate] = useState(new Date().toISOString().split('T')[0]);
   const [addGuardianName, setAddGuardianName] = useState('');
   const [addGuardianPhone, setAddGuardianPhone] = useState('');
@@ -132,8 +132,8 @@ export const BoardingPage: React.FC = () => {
   const [txCategory, setTxCategory] = useState(FEE_CATEGORIES[0]);
   const [txDescription, setTxDescription] = useState('');
   const [txAmount, setTxAmount] = useState<number | ''>(120);
-  const [txPaymentMethod, setTxPaymentMethod] = useState('Cash');
-  const [txStatus, setTxStatus] = useState('Completed');
+  const [txPaymentMethod, setTxPaymentMethod] = useState('নগদ (Cash)');
+  const [txStatus, setTxStatus] = useState('সম্পন্ন (Completed)');
   const [txReference, setTxReference] = useState('');
   const [txNote, setTxNote] = useState('');
   const [txError, setTxError] = useState<string | null>(null);
@@ -166,29 +166,32 @@ export const BoardingPage: React.FC = () => {
 
   // Selected active boarding student details for fee collection
   const activeResidents = useMemo(() => {
-    return boardingStudents.filter((b) => b.boardingStatus === 'Active');
+    return boardingStudents.filter((b) => {
+      const st = b.boardingStatus || '';
+      return st.includes('Active') || st.includes('সক্রিয়') || st === 'Active';
+    });
   }, [boardingStudents]);
 
   const selectedResidentDetails = useMemo(() => {
     return boardingStudents.find((b) => b.studentId === txStudentId);
   }, [boardingStudents, txStudentId]);
 
-  // 9. BOARDING BALANCE: Accounting calculations (Only completed transactions affect balance)
+  // Accounting calculations
   const totalBoardingFees = useMemo(() => {
     return boardingTransactions
-      .filter((t) => t.status === 'Completed' && t.type === 'fee')
+      .filter((t) => (t.status === 'Completed' || t.status?.includes('সম্পন্ন')) && t.type === 'fee')
       .reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
   }, [boardingTransactions]);
 
   const totalFoodExpense = useMemo(() => {
     return boardingTransactions
-      .filter((t) => t.status === 'Completed' && (t.type === 'foodExpense' || t.category === 'Food Expense' || t.category === 'Kitchen Ration'))
+      .filter((t) => (t.status === 'Completed' || t.status?.includes('সম্পন্ন')) && (t.type === 'foodExpense' || t.category === 'Food Expense' || t.category === 'Kitchen Ration'))
       .reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
   }, [boardingTransactions]);
 
   const totalOtherExpense = useMemo(() => {
     return boardingTransactions
-      .filter((t) => t.status === 'Completed' && t.type === 'otherExpense' && t.category !== 'Food Expense' && t.category !== 'Kitchen Ration')
+      .filter((t) => (t.status === 'Completed' || t.status?.includes('সম্পন্ন')) && t.type === 'otherExpense' && t.category !== 'Food Expense' && t.category !== 'Kitchen Ration')
       .reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
   }, [boardingTransactions]);
 
@@ -197,7 +200,10 @@ export const BoardingPage: React.FC = () => {
   }, [totalBoardingFees, totalFoodExpense, totalOtherExpense]);
 
   const totalBoardingStudentsCount = useMemo(() => {
-    return boardingStudents.filter((b) => b.boardingStatus === 'Active').length;
+    return boardingStudents.filter((b) => {
+      const st = b.boardingStatus || '';
+      return st.includes('Active') || st.includes('সক্রিয়') || st === 'Active';
+    }).length;
   }, [boardingStudents]);
 
   // Unique Classes & Rooms for dropdown filtering
@@ -220,7 +226,6 @@ export const BoardingPage: React.FC = () => {
   // Filters Boarding Students
   const filteredResidents = useMemo(() => {
     return boardingStudents.filter((b) => {
-      // 1. Search Query
       const q = effectiveSearch.trim().toLowerCase();
       if (q) {
         const studentObj = students.find((s) => s.id === b.studentId);
@@ -232,16 +237,13 @@ export const BoardingPage: React.FC = () => {
         }
       }
 
-      // 2. Class Filter
       if (selectedClass !== 'All' && b.className !== selectedClass) return false;
 
-      // 3. Room Filter
       const bRoom = b.room || b.roomNumber;
       if (selectedRoom !== 'All' && bRoom !== selectedRoom) return false;
 
-      // 4. Status Filter
       const bStatus = b.boardingStatus;
-      if (selectedStatus !== 'All' && bStatus !== selectedStatus) return false;
+      if (selectedStatus !== 'All' && !bStatus?.includes(selectedStatus)) return false;
 
       return true;
     });
@@ -250,25 +252,17 @@ export const BoardingPage: React.FC = () => {
   // Filters Boarding Transactions
   const filteredTxs = useMemo(() => {
     return boardingTransactions.filter((t) => {
-      // 1. Subpage filter
       if (activeSubItem === 'boarding-fees' && t.type !== 'fee') return false;
       if (activeSubItem === 'food-expense' && t.type !== 'foodExpense') return false;
       if (activeSubItem === 'other-expenses' && t.type !== 'otherExpense') return false;
 
-      // 2. Dynamic Types dropdown
       if (txTypeFilter !== 'All' && t.type !== txTypeFilter) return false;
-
-      // 3. Category Filter
       if (txCatFilter !== 'All' && t.category !== txCatFilter) return false;
+      if (txStatusFilter !== 'All' && !t.status?.includes(txStatusFilter)) return false;
 
-      // 4. Status Filter
-      if (txStatusFilter !== 'All' && t.status !== txStatusFilter) return false;
-
-      // 5. Date filter
       if (startDate && t.date < startDate) return false;
       if (endDate && t.date > endDate) return false;
 
-      // 6. Search (Student ID, Student Name, Description, Category)
       const q = effectiveSearch.trim().toLowerCase();
       if (q) {
         const matchesId = t.studentId?.toLowerCase().includes(q);
@@ -288,29 +282,28 @@ export const BoardingPage: React.FC = () => {
     setAddError(null);
 
     if (!addStudentId) {
-      setAddError('Please select a registered student.');
+      setAddError('দয়া করে একজন রেজিস্টার্ড ছাত্র নির্বাচন করুন।');
       return;
     }
     if (!addJoiningDate) {
-      setAddError('Joining Date is required.');
+      setAddError('যোগদানের তারিখ আবশ্যক।');
       return;
     }
     if (!addRoom) {
-      setAddError('Room selection is required.');
+      setAddError('রুম নির্বাচন আবশ্যক।');
       return;
     }
 
     setIsAddingStudent(true);
     try {
       const studentObj = students.find((s) => s.id === addStudentId);
-      if (!studentObj) throw new Error('Student data not found.');
+      if (!studentObj) throw new Error('ছাত্রের তথ্য পাওয়া যায়নি।');
 
-      // Check if student is already active in boarding
       const alreadyActive = boardingStudents.some(
-        (b) => b.studentId === addStudentId && (b.boardingStatus?.toLowerCase() === 'active')
+        (b) => b.studentId === addStudentId && ((b.boardingStatus || '').includes('Active') || (b.boardingStatus || '').includes('সক্রিয়'))
       );
       if (alreadyActive) {
-        setAddError(`Student "${studentObj.name}" is already an Active resident in boarding.`);
+        setAddError(`ছাত্র "${studentObj.name}" ইতিপূর্বেই বোর্ডিংয়ে সক্রিয় আবাসিক হিসেবে আছেন।`);
         setIsAddingStudent(false);
         return;
       }
@@ -331,7 +324,7 @@ export const BoardingPage: React.FC = () => {
         note: addNote.trim(),
         monthlyFee: 120,
         feeStatus: 'Due',
-        supervisor: 'Ustadh Huzaifa',
+        supervisor: 'উস্তাদ হুযাইফা',
       });
 
       setIsAddStudentOpen(false);
@@ -341,24 +334,23 @@ export const BoardingPage: React.FC = () => {
       setAddNote('');
     } catch (err: any) {
       console.error(err);
-      setAddError(err.message || 'Failed to enroll student.');
+      setAddError(err.message || 'ছাত্র ভর্তি করতে ব্যর্থ হয়েছে।');
     } finally {
       setIsAddingStudent(false);
     }
   };
 
-  // Handle Edit Student Submission
   const handleEditStudentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingStudent) return;
     setEditStudentError(null);
 
     if (!editJoiningDate) {
-      setEditStudentError('Joining Date is required.');
+      setEditStudentError('যোগদানের তারিখ আবশ্যক।');
       return;
     }
     if (!editRoom) {
-      setEditStudentError('Room selection is required.');
+      setEditStudentError('রুম নির্বাচন আবশ্যক।');
       return;
     }
 
@@ -377,50 +369,47 @@ export const BoardingPage: React.FC = () => {
       setEditingStudent(null);
     } catch (err: any) {
       console.error(err);
-      setEditStudentError(err.message || 'Failed to update boarding student.');
+      setEditStudentError(err.message || 'বোর্ডিং তথ্য আপডেট করতে ব্যর্থ হয়েছে।');
     } finally {
       setIsUpdatingStudent(false);
     }
   };
 
-  // Handle Remove Student Confirmation
   const handleRemoveStudentConfirm = async () => {
     if (!removingStudent) return;
     setIsRemovingStudent(true);
     try {
-      // 4. REMOVE FROM BOARDING: Sets boardingStatus = "Inactive" and update updatedAt
       await updateBoardingStudent(removingStudent.studentId, {
-        boardingStatus: 'Inactive',
+        boardingStatus: 'নিষ্ক্রিয় (Inactive)',
       });
       setRemovingStudent(null);
     } catch (err: any) {
       console.error(err);
-      alert(err.message || 'Failed to remove student from Boarding.');
+      alert(err.message || 'ছাত্রকে বোর্ডিং থেকে বাদ দিতে ব্যর্থ হয়েছে।');
     } finally {
       setIsRemovingStudent(false);
     }
   };
 
-  // Handle Recording Boarding Transaction (Fee / Expenses)
   const handleAddTxSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setTxError(null);
 
     if (txModalType === 'fee' && !txStudentId) {
-      setTxError('Please select an active resident student.');
+      setTxError('দয়া করে একজন সক্রিয় আবাসিক ছাত্র নির্বাচন করুন।');
       return;
     }
     if (!txDate) {
-      setTxError('Transaction date is required.');
+      setTxError('তারিখ আবশ্যক।');
       return;
     }
     const amt = Number(txAmount);
     if (!txAmount || isNaN(amt) || amt <= 0) {
-      setTxError('Amount must be greater than 0.');
+      setTxError('টাকার পরিমাণ শূন্য বা ঋণাত্মক হতে পারবে না।');
       return;
     }
     if (!txDescription.trim()) {
-      setTxError('Description is required.');
+      setTxError('বিবরণ আবশ্যক।');
       return;
     }
 
@@ -452,29 +441,28 @@ export const BoardingPage: React.FC = () => {
       setTxNote('');
     } catch (err: any) {
       console.error(err);
-      setTxError(err.message || 'Failed to record transaction.');
+      setTxError(err.message || 'লেনদেন সংরক্ষণ করতে ব্যর্থ হয়েছে।');
     } finally {
       setIsSubmittingTx(false);
     }
   };
 
-  // Handle Edit Transaction Submission
   const handleEditTxSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingTransaction) return;
     setEditTxError(null);
 
     if (!editTxDate) {
-      setEditTxError('Date is required.');
+      setEditTxError('তারিখ আবশ্যক।');
       return;
     }
     const amt = Number(editTxAmount);
     if (!editTxAmount || isNaN(amt) || amt <= 0) {
-      setEditTxError('Amount must be greater than 0.');
+      setEditTxError('টাকার পরিমাণ শূন্য বা ঋণাত্মক হতে পারবে না।');
       return;
     }
     if (!editTxDescription.trim()) {
-      setEditTxError('Description is required.');
+      setEditTxError('বিবরণ আবশ্যক।');
       return;
     }
 
@@ -494,13 +482,12 @@ export const BoardingPage: React.FC = () => {
       setEditingTransaction(null);
     } catch (err: any) {
       console.error(err);
-      setEditTxError(err.message || 'Failed to update transaction.');
+      setEditTxError(err.message || 'লেনদেন আপডেট করতে ব্যর্থ হয়েছে।');
     } finally {
       setIsUpdatingTx(false);
     }
   };
 
-  // Handle Delete Transaction Submission
   const handleDeleteTxSubmit = async () => {
     if (!deletingTransaction) return;
     setIsDeletingTx(true);
@@ -517,12 +504,12 @@ export const BoardingPage: React.FC = () => {
   const openAddTx = (type: 'fee' | 'foodExpense' | 'otherExpense') => {
     setTxModalType(type);
     setTxDate(new Date().toISOString().split('T')[0]);
-    setTxPaymentMethod('Cash');
-    setTxStatus('Completed');
+    setTxPaymentMethod('নগদ (Cash)');
+    setTxStatus('সম্পন্ন (Completed)');
     setTxReference('');
     setTxNote('');
     setTxStudentId(activeResidents.length > 0 ? activeResidents[0].studentId : '');
-    setTxDescription(type === 'fee' ? 'Monthly hostel room rent and dining fee' : '');
+    setTxDescription(type === 'fee' ? 'মাসিক আবাসিক ও মেস রুম ভাড়া' : '');
     setTxCategory(
       type === 'fee'
         ? FEE_CATEGORIES[0]
@@ -542,8 +529,8 @@ export const BoardingPage: React.FC = () => {
     setEditTxCategory(tx.category);
     setEditTxDescription(tx.description);
     setEditTxAmount(tx.amount);
-    setEditTxPaymentMethod(tx.paymentMethod || 'Cash');
-    setEditTxStatus(tx.status || 'Completed');
+    setEditTxPaymentMethod(tx.paymentMethod || 'নগদ (Cash)');
+    setEditTxStatus(tx.status || 'সম্পন্ন (Completed)');
     setEditTxReference(tx.reference || '');
     setEditTxNote(tx.note || '');
     setEditTxError(null);
@@ -553,7 +540,7 @@ export const BoardingPage: React.FC = () => {
     setEditingStudent(b);
     setEditRoom(b.room || b.roomNumber);
     setEditBed(b.bedNumber);
-    setEditStatus(b.boardingStatus || 'Active');
+    setEditStatus(b.boardingStatus || 'সক্রিয় (Active)');
     setEditJoiningDate(b.joiningDate);
     setEditGuardianName(b.guardianName || '');
     setEditGuardianPhone(b.guardianPhone || '');
@@ -562,56 +549,47 @@ export const BoardingPage: React.FC = () => {
   };
 
   const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'Active':
-      case 'Completed':
-      case 'Paid':
-        return 'bg-emerald-50 text-emerald-700 border-emerald-200';
-      case 'Pending':
-      case 'Partial':
-      case 'Due':
-        return 'bg-amber-50 text-amber-700 border-amber-200';
-      case 'Inactive':
-      case 'Left':
-      case 'Cancelled':
-        return 'bg-rose-50 text-rose-700 border-rose-200';
-      default:
-        return 'bg-slate-100 text-slate-600 border-slate-200';
+    if (status.includes('Active') || status.includes('সক্রিয়') || status === 'Completed' || status === 'Paid') {
+      return 'bg-emerald-50 text-emerald-700 border-emerald-200';
     }
+    if (status.includes('Pending') || status.includes('অপেক্ষমান') || status === 'Due') {
+      return 'bg-amber-50 text-amber-700 border-amber-200';
+    }
+    return 'bg-rose-50 text-rose-700 border-rose-200';
   };
 
   const subPageTitles: Record<string, { title: string; subtitle: string }> = {
     'boarding-students': {
-      title: 'Boarding Students',
-      subtitle: 'Manage residential students, rooms, beds and guardian contact details',
+      title: 'আবাসিক ছাত্র তালিকা',
+      subtitle: 'আবাসিক ছাত্রছাত্রী, রুম, বেড এবং অভিভাবকের যোগাযোগের বিবরণ পরিচালনা করুন',
     },
     'boarding-fees': {
-      title: 'Boarding Fees',
-      subtitle: 'Collect and track monthly residential/dining fees from boarding students',
+      title: 'বোর্ডিং ফি আদায়',
+      subtitle: 'আবাসিক ছাত্রছাত্রীদের মাসিক ফি ও ডাইনিং চার্জ সংগ্রহ ও হিসাব রাখুন',
     },
     'food-expense': {
-      title: 'Food Expense',
-      subtitle: 'Record and monitor kitchen ration, mess and catering expenses',
+      title: 'খাবার খরচ ও বাজার',
+      subtitle: 'মেস বাজার, রেশনের হিসাব এবং ক্যাটারিং খরচ পর্যবেক্ষণ করুন',
     },
     'other-expenses': {
-      title: 'Other Expenses',
-      subtitle: 'Track utilities, laundry, medical, maintenance and miscellaneous hostel costs',
+      title: 'অন্যান্য হোস্টেল খরচ',
+      subtitle: 'বিদ্যুৎ, পানি, লিলেন, পরিচ্ছন্নতা এবং হোস্টেলের খুচরা খরচ ট্র্যাক করুন',
     },
     'boarding-balance': {
-      title: 'Boarding Balance',
-      subtitle: 'Surplus reconciliation and comprehensive financial snapshot of the boarding fund',
+      title: 'বোর্ডিং ব্যালেন্স ও হিসাব',
+      subtitle: 'বোর্ডিং তহবিলের উদ্বৃত্ত হিসাব ও সামগ্রিক আর্থিক বিবরণী',
     },
   };
 
   const currentMeta = subPageTitles[activeSubItem] || {
-    title: 'Boarding Management',
-    subtitle: 'Hostel, boarding, dining and residential operations ledger',
+    title: 'বোর্ডিং ম্যানেজমেন্ট',
+    subtitle: 'হোস্টেল, মেস এবং আবাসিক পরিচালনার হিসাব',
   };
 
   return (
     <div className="space-y-6">
       <Breadcrumb
-        sectionTitle="Boarding"
+        sectionTitle="বোর্ডিং (আবাসিক)"
         subItemTitle={currentMeta.title}
         sectionKey="boarding"
         subItemKey={activeSubItem}
@@ -631,7 +609,7 @@ export const BoardingPage: React.FC = () => {
               className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-700 px-3.5 py-2 text-xs font-semibold text-white hover:bg-emerald-800 shadow-xs transition-colors cursor-pointer"
             >
               <UserPlus className="h-4 w-4" />
-              <span>{t('Add Boarding Student')}</span>
+              <span>বোর্ডিং ছাত্র যোগ করুন</span>
             </button>
           ) : (
             <>
@@ -640,21 +618,21 @@ export const BoardingPage: React.FC = () => {
                 className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-700 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-800 shadow-xs transition-colors cursor-pointer"
               >
                 <Plus className="h-4 w-4" />
-                <span>{t('Record Boarding Fee')}</span>
+                <span>বোর্ডিং ফি এন্ট্রি</span>
               </button>
               <button
                 onClick={() => openAddTx('foodExpense')}
                 className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 shadow-xs transition-colors cursor-pointer"
               >
                 <Utensils className="h-4 w-4 text-amber-600" />
-                <span>{t('Record Food Expense')}</span>
+                <span>খাবার খরচ এন্ট্রি</span>
               </button>
               <button
                 onClick={() => openAddTx('otherExpense')}
                 className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 shadow-xs transition-colors cursor-pointer"
               >
                 <Building2 className="h-4 w-4 text-purple-600" />
-                <span>{t('Record Other Expense')}</span>
+                <span>অন্যান্য খরচ এন্ট্রি</span>
               </button>
             </>
           )}
@@ -664,86 +642,41 @@ export const BoardingPage: React.FC = () => {
       {/* Summary Cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <StatCard
-          title={t('Total Residents')}
+          title="মোট আবাসিক ছাত্র"
           value={totalBoardingStudentsCount}
-          subtitle={t('Currently housed in hostel')}
+          subtitle="বর্তমানে হোস্টেলে অবস্থানরত"
           icon={<Users className="h-5 w-5 text-slate-700" />}
           accentColor="slate"
         />
         <StatCard
-          title={t('Total Boarding Fees')}
+          title="মোট বোর্ডিং ফি"
           value={`৳${totalBoardingFees.toLocaleString()}`}
-          subtitle={t('Collected fees from residents')}
+          subtitle="ছাত্রদের কাছ থেকে সংগৃহীত ফি"
           icon={<ArrowUpRight className="h-5 w-5 text-emerald-700" />}
           accentColor="emerald"
         />
         <StatCard
-          title={t('Total Food Expense')}
+          title="মোট খাবার খরচ"
           value={`৳${totalFoodExpense.toLocaleString()}`}
-          subtitle={t('Cumulative mess groceries & ration')}
+          subtitle="মেস বাজার ও রেশনের খরচ"
           icon={<Utensils className="h-5 w-5 text-amber-700" />}
           accentColor="amber"
         />
         <StatCard
-          title={t('Hostel Maintenance')}
+          title="হোস্টেল রক্ষণাবেক্ষণ"
           value={`৳${totalOtherExpense.toLocaleString()}`}
-          subtitle={t('Utilities, repairs & supplies')}
+          subtitle="ইউটিলিটি, মেরামত ও সাপ্লাইজ"
           icon={<Building2 className="h-5 w-5 text-purple-700" />}
           accentColor="purple"
         />
         <StatCard
-          title={t('Net Boarding Balance')}
+          title="নেট বোর্ডিং ব্যালেন্স"
           value={`৳${boardingBalance.toLocaleString()}`}
-          subtitle={t('Fees collected minus all expenses')}
+          subtitle="মোট ফি থেকে সকল খরচ বাদ"
           icon={<Receipt className="h-5 w-5 text-sky-700" />}
           accentColor="blue"
         />
       </div>
-
-      {/* Balance reconciliation page */}
-      {activeSubItem === 'boarding-balance' && (
-        <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-xs space-y-4">
-          <h3 className="text-sm font-bold text-slate-900 border-b border-slate-100 pb-2">
-            Boarding Reserve Accounting Solvency Check
-          </h3>
-
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4 p-5 rounded-xl bg-slate-50 border border-slate-200">
-            <div className="text-center md:text-left">
-              <span className="text-xs text-slate-500 font-semibold uppercase">Total Boarding Fees</span>
-              <p className="text-2xl font-bold text-emerald-700 font-mono tabular-nums mt-1">
-                +৳{totalBoardingFees.toLocaleString()}
-              </p>
-            </div>
-
-            <span className="text-xl font-bold text-slate-400">−</span>
-
-            <div className="text-center md:text-left">
-              <span className="text-xs text-slate-500 font-semibold uppercase">Total Food Expense</span>
-              <p className="text-2xl font-bold text-amber-700 font-mono tabular-nums mt-1">
-                -৳{totalFoodExpense.toLocaleString()}
-              </p>
-            </div>
-
-            <span className="text-xl font-bold text-slate-400">−</span>
-
-            <div className="text-center md:text-left">
-              <span className="text-xs text-slate-500 font-semibold uppercase">Other Boarding Expenses</span>
-              <p className="text-2xl font-bold text-amber-700 font-mono tabular-nums mt-1">
-                -৳{totalOtherExpense.toLocaleString()}
-              </p>
-            </div>
-
-            <span className="text-xl font-bold text-slate-400">=</span>
-
-            <div className="text-center md:text-left bg-white px-5 py-3 rounded-lg border border-slate-200 shadow-xs">
-              <span className="text-xs text-slate-500 font-bold uppercase text-sky-800">Net Boarding Surplus</span>
-              <p className="text-2xl font-black text-slate-900 font-mono tabular-nums mt-1">
-                ৳{boardingBalance.toLocaleString()}
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Main Boarding Student List Table */}
       {activeSubItem === 'boarding-students' ? (
@@ -756,7 +689,7 @@ export const BoardingPage: React.FC = () => {
                 type="text"
                 value={localSearch}
                 onChange={(e) => setLocalSearch(e.target.value)}
-                placeholder="Search by ID, student name, father name..."
+                placeholder="ছাত্র আইডি, নাম বা পিতার নাম দিয়ে খুঁজুন..."
                 className="w-full rounded-lg border border-slate-200 bg-slate-50 py-1.5 pl-8 pr-3 text-xs text-slate-900 placeholder-slate-400 focus:outline-hidden"
               />
             </div>
@@ -764,13 +697,13 @@ export const BoardingPage: React.FC = () => {
             <div className="flex flex-wrap items-center gap-2">
               {/* Class Filter */}
               <div className="flex items-center gap-1.5 text-xs">
-                <span className="font-medium text-slate-500">Class:</span>
+                <span className="font-medium text-slate-500">শ্রেণী:</span>
                 <select
                   value={selectedClass}
                   onChange={(e) => setSelectedClass(e.target.value)}
                   className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 font-medium text-slate-700 focus:outline-hidden"
                 >
-                  <option value="All">All Classes</option>
+                  <option value="All">সকল শ্রেণী</option>
                   {uniqueClasses.map((c) => (
                     <option key={c} value={c}>
                       {c}
@@ -781,13 +714,13 @@ export const BoardingPage: React.FC = () => {
 
               {/* Room Filter */}
               <div className="flex items-center gap-1.5 text-xs">
-                <span className="font-medium text-slate-500">Room:</span>
+                <span className="font-medium text-slate-500">রুম:</span>
                 <select
                   value={selectedRoom}
                   onChange={(e) => setSelectedRoom(e.target.value)}
                   className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 font-medium text-slate-700 focus:outline-hidden"
                 >
-                  <option value="All">All Rooms</option>
+                  <option value="All">সকল রুম</option>
                   {uniqueRooms.map((r) => (
                     <option key={r} value={r}>
                       {r}
@@ -798,13 +731,13 @@ export const BoardingPage: React.FC = () => {
 
               {/* Status Filter */}
               <div className="flex items-center gap-1.5 text-xs">
-                <span className="font-medium text-slate-500">Status:</span>
+                <span className="font-medium text-slate-500">স্ট্যাটাস:</span>
                 <select
                   value={selectedStatus}
                   onChange={(e) => setSelectedStatus(e.target.value)}
                   className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 font-medium text-slate-700 focus:outline-hidden"
                 >
-                  <option value="All">All Statuses</option>
+                  <option value="All">সকল স্ট্যাটাস</option>
                   {BOARDING_STATUS_OPTIONS.map((s) => (
                     <option key={s} value={s}>
                       {s}
@@ -824,7 +757,7 @@ export const BoardingPage: React.FC = () => {
                   className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
                 >
                   <RotateCcw className="h-3.5 w-3.5" />
-                  <span>Reset</span>
+                  <span>রিসেট</span>
                 </button>
               )}
             </div>
@@ -836,16 +769,16 @@ export const BoardingPage: React.FC = () => {
               <table className="w-full text-left text-xs">
                 <thead className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
                   <tr>
-                    <th className="px-5 py-3.5">Student ID</th>
-                    <th className="px-5 py-3.5">Student Name</th>
-                    <th className="px-5 py-3.5">Class</th>
-                    <th className="px-5 py-3.5 text-center">Section</th>
-                    <th className="px-5 py-3.5">Room</th>
-                    <th className="px-5 py-3.5">Bed Number</th>
-                    <th className="px-5 py-3.5">Joining Date</th>
-                    <th className="px-5 py-3.5">Guardian Details</th>
-                    <th className="px-5 py-3.5 text-center">Status</th>
-                    <th className="px-5 py-3.5 text-right">Actions</th>
+                    <th className="px-5 py-3.5">ছাত্র আইডি</th>
+                    <th className="px-5 py-3.5">ছাত্রের নাম</th>
+                    <th className="px-5 py-3.5">শ্রেণী</th>
+                    <th className="px-5 py-3.5 text-center">সেকশন</th>
+                    <th className="px-5 py-3.5">রুম</th>
+                    <th className="px-5 py-3.5">বেড নম্বর</th>
+                    <th className="px-5 py-3.5">যোগদানের তারিখ</th>
+                    <th className="px-5 py-3.5">অভিভাবকের বিবরণ</th>
+                    <th className="px-5 py-3.5 text-center">স্ট্যাটাস</th>
+                    <th className="px-5 py-3.5 text-right">কার্যক্রম</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -887,7 +820,7 @@ export const BoardingPage: React.FC = () => {
                         </td>
                         <td className="px-5 py-3.5 whitespace-nowrap text-center">
                           <span className={`inline-block rounded-md px-2.5 py-0.5 text-[11px] font-semibold border ${getStatusBadge(st.boardingStatus || 'Active')}`}>
-                            {st.boardingStatus || 'Active'}
+                            {st.boardingStatus || 'সক্রিয়'}
                           </span>
                         </td>
                         <td className="px-5 py-3.5 whitespace-nowrap text-right">
@@ -897,25 +830,25 @@ export const BoardingPage: React.FC = () => {
                                 setPrefillFeeStudentId(st.studentId);
                                 viewStudentProfile(st.studentId);
                               }}
-                              title="View Boarding Profile"
+                              title="প্রোফাইল দেখুন"
                               className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100 hover:text-emerald-700 transition-colors cursor-pointer"
                             >
                               <FileText className="h-3.5 w-3.5" />
                             </button>
                             <button
                               onClick={() => openEditStudent(st)}
-                              title="Edit Boarding Settings"
+                              title="সম্পাদনা করুন"
                               className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100 hover:text-emerald-700 transition-colors cursor-pointer"
                             >
                               <Edit2 className="h-3.5 w-3.5" />
                             </button>
-                            {st.boardingStatus !== 'Inactive' && (
+                            {st.boardingStatus !== 'নিষ্ক্রিয় (Inactive)' && (
                               <button
                                 onClick={() => setRemovingStudent(st)}
-                                title="Remove from Boarding"
+                                title="বোর্ডিং থেকে বাদ দিন"
                                 className="rounded-md p-1.5 text-rose-500 hover:bg-rose-50 hover:text-rose-700 transition-colors cursor-pointer font-semibold text-xs border border-rose-100 px-2 py-0.5"
                               >
-                                Remove
+                                বাদ দিন
                               </button>
                             )}
                           </div>
@@ -928,8 +861,8 @@ export const BoardingPage: React.FC = () => {
                         <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-400 mb-2">
                           <Users className="h-5 w-5" />
                         </div>
-                        <p className="text-xs font-semibold text-slate-600">No boarding students found in this view</p>
-                        <p className="text-[11px] text-slate-400 mt-0.5">Click "Enroll Boarding Student" above to register a resident.</p>
+                        <p className="text-xs font-semibold text-slate-600">কোনো আবাসিক ছাত্র পাওয়া যায়নি</p>
+                        <p className="text-[11px] text-slate-400 mt-0.5">নতুন আবাসিক ছাত্র যোগ করতে উপরে "বোর্ডিং ছাত্র যোগ করুন" এ ক্লিক করুন।</p>
                       </td>
                     </tr>
                   )}
@@ -950,42 +883,25 @@ export const BoardingPage: React.FC = () => {
                   type="text"
                   value={localSearch}
                   onChange={(e) => setLocalSearch(e.target.value)}
-                  placeholder="Search student ID, name, particulars..."
+                  placeholder="ছাত্র আইডি, নাম বা বিবরণ দিয়ে খুঁজুন..."
                   className="w-full rounded-lg border border-slate-200 bg-slate-50 py-1.5 pl-8 pr-3 text-xs text-slate-900 placeholder-slate-400 focus:outline-hidden focus:bg-white transition-all"
                 />
               </div>
               <span className="text-xs text-slate-500 font-medium">
-                {filteredTxs.length} transaction entries filtered
+                {filteredTxs.length} টি লেনদেন পাওয়া গেছে
               </span>
             </div>
 
             <div className="flex flex-wrap items-center gap-3 pt-1">
-              {/* Type Filter */}
-              {activeSubItem === 'boarding-balance' && (
-                <div className="flex items-center gap-1.5 text-xs">
-                  <span className="font-medium text-slate-500">Type:</span>
-                  <select
-                    value={txTypeFilter}
-                    onChange={(e) => setTxTypeFilter(e.target.value)}
-                    className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 font-medium text-slate-700 focus:outline-hidden"
-                  >
-                    <option value="All">All Types</option>
-                    <option value="fee">Boarding Fees</option>
-                    <option value="foodExpense">Food Expense</option>
-                    <option value="otherExpense">Other Expense</option>
-                  </select>
-                </div>
-              )}
-
               {/* Status Filter */}
               <div className="flex items-center gap-1.5 text-xs">
-                <span className="font-medium text-slate-500">Status:</span>
+                <span className="font-medium text-slate-500">স্ট্যাটাস:</span>
                 <select
                   value={txStatusFilter}
                   onChange={(e) => setTxStatusFilter(e.target.value)}
                   className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 font-medium text-slate-700 focus:outline-hidden"
                 >
-                  <option value="All">All Statuses</option>
+                  <option value="All">সকল স্ট্যাটাস</option>
                   {TRANSACTION_STATUSES.map((s) => (
                     <option key={s} value={s}>{s}</option>
                   ))}
@@ -994,14 +910,14 @@ export const BoardingPage: React.FC = () => {
 
               {/* Date Filters */}
               <div className="flex items-center gap-1 text-xs">
-                <span className="font-medium text-slate-500">From:</span>
+                <span className="font-medium text-slate-500">তারিখ থেকে:</span>
                 <input
                   type="date"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
                   className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-slate-700 focus:outline-hidden"
                 />
-                <span className="font-medium text-slate-500">To:</span>
+                <span className="font-medium text-slate-500">পর্যন্ত:</span>
                 <input
                   type="date"
                   value={endDate}
@@ -1022,7 +938,7 @@ export const BoardingPage: React.FC = () => {
                   className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
                 >
                   <RotateCcw className="h-3.5 w-3.5" />
-                  <span>Reset Filters</span>
+                  <span>ফিল্টার রিসেট</span>
                 </button>
               )}
             </div>
@@ -1034,16 +950,16 @@ export const BoardingPage: React.FC = () => {
               <table className="w-full text-left text-xs">
                 <thead className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
                   <tr>
-                    <th className="px-5 py-3.5">Date</th>
-                    <th className="px-5 py-3.5">Type</th>
-                    <th className="px-5 py-3.5">Student / Particulars</th>
-                    <th className="px-5 py-3.5">Category</th>
-                    <th className="px-5 py-3.5">Description</th>
-                    <th className="px-5 py-3.5 text-right">Amount</th>
-                    <th className="px-5 py-3.5">Payment Method</th>
-                    <th className="px-5 py-3.5">Ref / Slip #</th>
-                    <th className="px-5 py-3.5 text-center">Status</th>
-                    <th className="px-5 py-3.5 text-right">Actions</th>
+                    <th className="px-5 py-3.5">তারিখ</th>
+                    <th className="px-5 py-3.5">ধরণ</th>
+                    <th className="px-5 py-3.5">ছাত্র / বিবরণী</th>
+                    <th className="px-5 py-3.5">ক্যাটাগরি</th>
+                    <th className="px-5 py-3.5">বিবরণ</th>
+                    <th className="px-5 py-3.5 text-right">টাকা (৳)</th>
+                    <th className="px-5 py-3.5">পেমেন্ট মাধ্যম</th>
+                    <th className="px-5 py-3.5">রেফারেন্স</th>
+                    <th className="px-5 py-3.5 text-center">স্ট্যাটাস</th>
+                    <th className="px-5 py-3.5 text-right">কার্যক্রম</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -1065,17 +981,17 @@ export const BoardingPage: React.FC = () => {
                           <span className={`inline-block rounded px-2 py-0.5 text-[10px] font-bold uppercase ${
                             t.type === 'fee' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
                           }`}>
-                            {t.type === 'fee' ? 'Fee Collection' : t.type === 'foodExpense' ? 'Food Expense' : 'Other Expense'}
+                            {t.type === 'fee' ? 'ফি আদায়' : t.type === 'foodExpense' ? 'খাবার খরচ' : 'অন্যান্য খরচ'}
                           </span>
                         </td>
                         <td className="px-5 py-3.5 whitespace-nowrap font-bold text-slate-900">
                           {t.type === 'fee' ? (
                             <div>
-                              <span>{t.studentName || 'Resident'}</span>
+                              <span>{t.studentName || 'আবাসিক ছাত্র'}</span>
                               <span className="block text-[10px] font-mono text-emerald-800 font-normal">{t.studentId}</span>
                             </div>
                           ) : (
-                            'Boarding Mess'
+                            'বোর্ডিং মেস'
                           )}
                         </td>
                         <td className="px-5 py-3.5 whitespace-nowrap text-slate-600 font-medium">
@@ -1087,31 +1003,31 @@ export const BoardingPage: React.FC = () => {
                         <td className={`px-5 py-3.5 whitespace-nowrap text-right font-mono tabular-nums font-bold ${
                           t.type === 'fee' ? 'text-emerald-700' : 'text-amber-700'
                         }`}>
-                          {t.type === 'fee' ? '+' : '−'}${t.amount.toLocaleString()}
+                          {t.type === 'fee' ? '+' : '−'}৳{t.amount.toLocaleString()}
                         </td>
                         <td className="px-5 py-3.5 whitespace-nowrap text-slate-600 font-medium">
-                          {t.paymentMethod || 'Cash'}
+                          {t.paymentMethod || 'নগদ'}
                         </td>
                         <td className="px-5 py-3.5 whitespace-nowrap font-mono text-slate-500">
                           {t.reference || '-'}
                         </td>
                         <td className="px-5 py-3.5 whitespace-nowrap text-center">
                           <span className={`inline-block rounded-md px-2.5 py-0.5 text-[11px] font-semibold border ${getStatusBadge(t.status || 'Completed')}`}>
-                            {t.status || 'Completed'}
+                            {t.status || 'সম্পন্ন'}
                           </span>
                         </td>
                         <td className="px-5 py-3.5 whitespace-nowrap text-right">
                           <div className="flex items-center justify-end gap-1.5">
                             <button
                               onClick={() => openEditTx(t)}
-                              title="Edit Transaction"
+                              title="সম্পাদনা"
                               className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100 hover:text-emerald-700 transition-colors cursor-pointer"
                             >
                               <Edit2 className="h-3.5 w-3.5" />
                             </button>
                             <button
                               onClick={() => setDeletingTransaction(t)}
-                              title="Delete Transaction"
+                              title="মুছে ফেলুন"
                               className="rounded-md p-1.5 text-slate-500 hover:bg-rose-50 hover:text-rose-700 transition-colors cursor-pointer"
                             >
                               <Trash2 className="h-3.5 w-3.5" />
@@ -1126,8 +1042,7 @@ export const BoardingPage: React.FC = () => {
                         <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-400 mb-2">
                           <Receipt className="h-5 w-5" />
                         </div>
-                        <p className="text-xs font-semibold text-slate-600">No boarding transactions found in this category</p>
-                        <p className="text-[11px] text-slate-400 mt-0.5">Vouchers and receipts are loaded in real-time from Firestore.</p>
+                        <p className="text-xs font-semibold text-slate-600">এই ক্যাটাগরিতে কোনো লেনদেন পাওয়া যায়নি</p>
                       </td>
                     </tr>
                   )}
@@ -1143,8 +1058,8 @@ export const BoardingPage: React.FC = () => {
         <Modal
           isOpen={isAddStudentOpen}
           onClose={() => setIsAddStudentOpen(false)}
-          title="Enroll Boarding Resident"
-          subtitle="Assign Registered Student to Madrasa Dormitory & Mess"
+          title="বোর্ডিং ছাত্র ভর্তি"
+          subtitle="মাদ্রাসা ডরমিটরি ও মেসে আবাসিক ছাত্র নির্ধারণ করুন"
           maxWidth="md"
         >
           <form onSubmit={handleEnrollSubmit} className="space-y-4 text-xs">
@@ -1157,14 +1072,14 @@ export const BoardingPage: React.FC = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-12 gap-4 pb-2 border-b border-slate-100">
               <div className="md:col-span-5">
-                <label className="block font-semibold text-slate-700 mb-1">Select Registered Student *</label>
+                <label className="block font-semibold text-slate-700 mb-1">ছাত্র নির্বাচন করুন *</label>
                 <select
                   required
                   value={addStudentId}
                   onChange={(e) => setAddStudentOpenId(e.target.value)}
                   className="w-full rounded-lg border border-slate-200 bg-white p-2.5 text-xs text-slate-900 focus:outline-hidden focus:border-emerald-600"
                 >
-                  <option value="">-- Choose Student --</option>
+                  <option value="">-- ছাত্র নির্বাচন --</option>
                   {students.map((s) => (
                     <option key={s.id} value={s.id}>
                       {s.name} ({s.id} - {s.className})
@@ -1174,35 +1089,35 @@ export const BoardingPage: React.FC = () => {
               </div>
 
               <div className="md:col-span-7 rounded-lg bg-slate-50 p-3 border border-slate-200">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Auto-populated Student Info</span>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">ছাত্রের তথ্য</span>
                 {selectedStudentDetails ? (
                   <div className="grid grid-cols-2 gap-2 text-xs">
                     <div>
-                      <span className="text-slate-400 block text-[9px] uppercase">ID & Name</span>
+                      <span className="text-slate-400 block text-[9px] uppercase">আইডি ও নাম</span>
                       <strong className="text-slate-900">{selectedStudentDetails.id} - {selectedStudentDetails.name}</strong>
                     </div>
                     <div>
-                      <span className="text-slate-400 block text-[9px] uppercase">Father's Name</span>
+                      <span className="text-slate-400 block text-[9px] uppercase">পিতার নাম</span>
                       <strong className="text-slate-800">{selectedStudentDetails.fatherName}</strong>
                     </div>
                     <div>
-                      <span className="text-slate-400 block text-[9px] uppercase">Academic Class</span>
+                      <span className="text-slate-400 block text-[9px] uppercase">শ্রেণী</span>
                       <strong className="text-slate-800">{selectedStudentDetails.className}</strong>
                     </div>
                     <div>
-                      <span className="text-slate-400 block text-[9px] uppercase">Section</span>
+                      <span className="text-slate-400 block text-[9px] uppercase">সেকশন</span>
                       <strong className="text-slate-800">{selectedStudentDetails.section || 'A'}</strong>
                     </div>
                   </div>
                 ) : (
-                  <p className="text-[11px] text-slate-400 italic">Select a student on the left to review details.</p>
+                  <p className="text-[11px] text-slate-400 italic">বাম পাশ থেকে একজন ছাত্র নির্বাচন করুন।</p>
                 )}
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">Dormitory Room *</label>
+                <label className="block font-semibold text-slate-700 mb-1">রুম নম্বর *</label>
                 <select
                   value={addRoom}
                   onChange={(e) => setAddRoom(e.target.value)}
@@ -1215,11 +1130,11 @@ export const BoardingPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">Bed Number *</label>
+                <label className="block font-semibold text-slate-700 mb-1">বেড নম্বর *</label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Bed-3"
+                  placeholder="যেমন: বেড-৩"
                   value={addBed}
                   onChange={(e) => setAddBed(e.target.value)}
                   className="w-full rounded-lg border border-slate-200 p-2 text-xs text-slate-900 focus:outline-hidden focus:border-emerald-600 font-mono"
@@ -1229,7 +1144,7 @@ export const BoardingPage: React.FC = () => {
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">Boarding Status *</label>
+                <label className="block font-semibold text-slate-700 mb-1">স্ট্যাটাস *</label>
                 <select
                   value={addStatus}
                   onChange={(e) => setAddStatus(e.target.value)}
@@ -1242,7 +1157,7 @@ export const BoardingPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">Joining Date *</label>
+                <label className="block font-semibold text-slate-700 mb-1">যোগদানের তারিখ *</label>
                 <input
                   type="date"
                   required
@@ -1255,10 +1170,10 @@ export const BoardingPage: React.FC = () => {
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">Local Guardian Name</label>
+                <label className="block font-semibold text-slate-700 mb-1">অভিভাবকের নাম</label>
                 <input
                   type="text"
-                  placeholder="Leave empty for father"
+                  placeholder="পিতার নাম না হলে লিখুন"
                   value={addGuardianName}
                   onChange={(e) => setAddGuardianName(e.target.value)}
                   className="w-full rounded-lg border border-slate-200 p-2 text-xs text-slate-900 focus:outline-hidden focus:border-emerald-600"
@@ -1266,10 +1181,10 @@ export const BoardingPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">Guardian Phone #</label>
+                <label className="block font-semibold text-slate-700 mb-1">অভিভাবকের ফোন নম্বর</label>
                 <input
                   type="text"
-                  placeholder="Leave empty for father's phone"
+                  placeholder="মোবাইল নম্বর"
                   value={addGuardianPhone}
                   onChange={(e) => setAddGuardianPhone(e.target.value)}
                   className="w-full rounded-lg border border-slate-200 p-2 text-xs text-slate-900 focus:outline-hidden focus:border-emerald-600 font-mono"
@@ -1278,10 +1193,10 @@ export const BoardingPage: React.FC = () => {
             </div>
 
             <div>
-              <label className="block font-semibold text-slate-700 mb-1">Dormitory & Mess Particular Note</label>
+              <label className="block font-semibold text-slate-700 mb-1">বিশেষ নোট / মন্তব্য</label>
               <input
                 type="text"
-                placeholder="e.g. Any food allergies or special medical instructions..."
+                placeholder="যেমন: খাবারের অ্যালার্জি বা বিশেষ নির্দেশনা..."
                 value={addNote}
                 onChange={(e) => setAddNote(e.target.value)}
                 className="w-full rounded-lg border border-slate-200 p-2 text-xs text-slate-900 focus:outline-hidden focus:border-emerald-600"
@@ -1294,14 +1209,14 @@ export const BoardingPage: React.FC = () => {
                 onClick={() => setIsAddStudentOpen(false)}
                 className="rounded-lg border border-slate-200 px-4 py-2 font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
               >
-                Cancel
+                বাতিল
               </button>
               <button
                 type="submit"
                 disabled={isAddingStudent || !addStudentId}
                 className="rounded-lg bg-emerald-700 px-5 py-2 font-semibold text-white hover:bg-emerald-800 disabled:opacity-50 cursor-pointer"
               >
-                {isAddingStudent ? 'Enrolling...' : 'Enroll in Boarding'}
+                {isAddingStudent ? 'সংরক্ষণ হচ্ছে...' : 'বোর্ডিং ভর্তি নিশ্চিত করুন'}
               </button>
             </div>
           </form>
@@ -1313,8 +1228,8 @@ export const BoardingPage: React.FC = () => {
         <Modal
           isOpen={!!editingStudent}
           onClose={() => setEditingStudent(null)}
-          title={`Edit Boarding settings`}
-          subtitle="Modify room assignment and guardian details in Firestore"
+          title="বোর্ডিং তথ্য সম্পাদনা"
+          subtitle="রুম নম্বর এবং অভিভাবকের বিবরণ পরিবর্তন করুন"
           maxWidth="md"
         >
           <form onSubmit={handleEditStudentSubmit} className="space-y-4 text-xs">
@@ -1327,7 +1242,7 @@ export const BoardingPage: React.FC = () => {
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">Dormitory Room *</label>
+                <label className="block font-semibold text-slate-700 mb-1">রুম নম্বর *</label>
                 <select
                   value={editRoom}
                   onChange={(e) => setEditRoom(e.target.value)}
@@ -1340,7 +1255,7 @@ export const BoardingPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">Bed Number *</label>
+                <label className="block font-semibold text-slate-700 mb-1">বেড নম্বর *</label>
                 <input
                   type="text"
                   required
@@ -1353,7 +1268,7 @@ export const BoardingPage: React.FC = () => {
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">Boarding Status *</label>
+                <label className="block font-semibold text-slate-700 mb-1">স্ট্যাটাস *</label>
                 <select
                   value={editStatusState}
                   onChange={(e) => setEditStatus(e.target.value)}
@@ -1366,7 +1281,7 @@ export const BoardingPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">Joining Date *</label>
+                <label className="block font-semibold text-slate-700 mb-1">যোগদানের তারিখ *</label>
                 <input
                   type="date"
                   required
@@ -1379,7 +1294,7 @@ export const BoardingPage: React.FC = () => {
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">Local Guardian Name</label>
+                <label className="block font-semibold text-slate-700 mb-1">অভিভাবকের নাম</label>
                 <input
                   type="text"
                   value={editGuardianName}
@@ -1389,7 +1304,7 @@ export const BoardingPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">Guardian Phone #</label>
+                <label className="block font-semibold text-slate-700 mb-1">অভিভাবকের ফোন নম্বর</label>
                 <input
                   type="text"
                   value={editGuardianPhone}
@@ -1400,7 +1315,7 @@ export const BoardingPage: React.FC = () => {
             </div>
 
             <div>
-              <label className="block font-semibold text-slate-700 mb-1">Note</label>
+              <label className="block font-semibold text-slate-700 mb-1">নোট</label>
               <input
                 type="text"
                 value={editStudentNote}
@@ -1415,14 +1330,14 @@ export const BoardingPage: React.FC = () => {
                 onClick={() => setEditingStudent(null)}
                 className="rounded-lg border border-slate-200 px-4 py-2 font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
               >
-                Cancel
+                বাতিল
               </button>
               <button
                 type="submit"
                 disabled={isUpdatingStudent}
                 className="rounded-lg bg-emerald-700 px-5 py-2 font-semibold text-white hover:bg-emerald-800 disabled:opacity-50 cursor-pointer"
               >
-                {isUpdatingStudent ? 'Saving...' : 'Save Changes'}
+                {isUpdatingStudent ? 'সংরক্ষণ হচ্ছে...' : 'পরিবর্তন সংরক্ষণ করুন'}
               </button>
             </div>
           </form>
@@ -1434,23 +1349,23 @@ export const BoardingPage: React.FC = () => {
         <Modal
           isOpen={!!removingStudent}
           onClose={() => setRemovingStudent(null)}
-          title="Remove Resident from Boarding"
-          subtitle="Are you sure you want to remove this student from Boarding?"
+          title="বোর্ডিং থেকে ছাত্র বাদ দিন"
+          subtitle="আপনি কি নিশ্চিতভাবে এই ছাত্রকে বোর্ডিং থেকে বাদ দিতে চান?"
           maxWidth="sm"
         >
           <div className="space-y-4 text-xs">
             <div className="flex items-start gap-3 rounded-lg bg-rose-50 p-3.5 text-rose-800 border border-rose-200">
               <AlertCircle className="h-5 w-5 text-rose-600 shrink-0 mt-0.5" />
               <div>
-                <strong className="block mb-0.5">Notice: Main Student Record remains active</strong>
-                Removing this resident will only change their boarding status to <span className="font-bold">Inactive</span> and keep all financial and boarding history intact.
+                <strong className="block mb-0.5">সতর্কতা: মূল ছাত্রের রেকর্ড সক্রিয় থাকবে</strong>
+                এই ছাত্রের বোর্ডিং স্ট্যাটাস <span className="font-bold">নিষ্ক্রিয় (Inactive)</span> হবে এবং পূর্বের সকল আর্থিক ও বোর্ডিং ইতিহাস সংরক্ষিত থাকবে।
               </div>
             </div>
 
             <div className="rounded-lg bg-slate-50 p-3 border border-slate-100 space-y-1">
-              <div>Student Name: <strong className="text-slate-900">{removingStudent.studentName || removingStudent.name}</strong></div>
-              <div>Student ID: <strong className="text-slate-900 font-mono">{removingStudent.studentId}</strong></div>
-              <div>Room & Bed: <strong className="text-slate-800 font-mono">{removingStudent.room || removingStudent.roomNumber} - {removingStudent.bedNumber}</strong></div>
+              <div>ছাত্রের নাম: <strong className="text-slate-900">{removingStudent.studentName || removingStudent.name}</strong></div>
+              <div>ছাত্র আইডি: <strong className="text-slate-900 font-mono">{removingStudent.studentId}</strong></div>
+              <div>রুম ও বেড: <strong className="text-slate-800 font-mono">{removingStudent.room || removingStudent.roomNumber} - {removingStudent.bedNumber}</strong></div>
             </div>
 
             <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
@@ -1459,7 +1374,7 @@ export const BoardingPage: React.FC = () => {
                 onClick={() => setRemovingStudent(null)}
                 className="rounded-lg border border-slate-200 px-4 py-2 font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
               >
-                Cancel
+                বাতিল
               </button>
               <button
                 type="button"
@@ -1467,26 +1382,26 @@ export const BoardingPage: React.FC = () => {
                 onClick={handleRemoveStudentConfirm}
                 className="rounded-lg bg-rose-600 px-4 py-2 font-semibold text-white hover:bg-rose-700 disabled:opacity-50 cursor-pointer"
               >
-                {isRemovingStudent ? 'Processing...' : 'Remove from Boarding'}
+                {isRemovingStudent ? 'প্রক্রিয়াধীন...' : 'বোর্ডিং থেকে বাদ দিন'}
               </button>
             </div>
           </div>
         </Modal>
       )}
 
-      {/* Add Boarding Transaction Modal (Collect Fee, Food Expense, Other Expense) */}
+      {/* Add Boarding Transaction Modal */}
       {isAddTxOpen && (
         <Modal
           isOpen={isAddTxOpen}
           onClose={() => setIsAddTxOpen(false)}
           title={
             txModalType === 'fee'
-              ? 'Collect Boarding Fee'
+              ? 'বোর্ডিং ফি গ্রহণ'
               : txModalType === 'foodExpense'
-              ? 'Record Food & Mess Expense'
-              : 'Record Other Boarding Expense'
+              ? 'খাবার ও মেস খরচ এন্ট্রি'
+              : 'অন্যান্য বোর্ডিং খরচ এন্ট্রি'
           }
-          subtitle="Log receipt or expenditure directly into Boarding Firestore pool"
+          subtitle="বোর্ডিং ফাণ্ডে রসিদ বা ব্যয় এন্ট্রি করুন"
           maxWidth="md"
         >
           <form onSubmit={handleAddTxSubmit} className="space-y-4 text-xs">
@@ -1499,7 +1414,7 @@ export const BoardingPage: React.FC = () => {
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">Date *</label>
+                <label className="block font-semibold text-slate-700 mb-1">তারিখ *</label>
                 <div className="relative">
                   <Calendar className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
                   <input
@@ -1514,7 +1429,7 @@ export const BoardingPage: React.FC = () => {
 
               {txModalType === 'fee' ? (
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Boarding Student *</label>
+                  <label className="block font-semibold text-slate-700 mb-1">আবাসিক ছাত্র *</label>
                   <div className="relative">
                     <User className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
                     <select
@@ -1523,7 +1438,7 @@ export const BoardingPage: React.FC = () => {
                       onChange={(e) => setTxStudentId(e.target.value)}
                       className="w-full rounded-lg border border-slate-200 py-2 pl-8 pr-2.5 text-xs text-slate-900 bg-white focus:outline-hidden focus:border-emerald-600"
                     >
-                      <option value="">-- Choose Resident --</option>
+                      <option value="">-- আবাসিক ছাত্র নির্বাচন --</option>
                       {activeResidents.map((st) => (
                         <option key={st.studentId} value={st.studentId}>
                           {st.studentName || st.name} ({st.studentId})
@@ -1534,7 +1449,7 @@ export const BoardingPage: React.FC = () => {
                 </div>
               ) : (
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Expense Category *</label>
+                  <label className="block font-semibold text-slate-700 mb-1">খরচের ক্যাটাগরি *</label>
                   <div className="relative">
                     <Tag className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
                     <select
@@ -1553,7 +1468,7 @@ export const BoardingPage: React.FC = () => {
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">Payment Method *</label>
+                <label className="block font-semibold text-slate-700 mb-1">পেমেন্ট মাধ্যম *</label>
                 <div className="relative">
                   <CreditCard className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
                   <select
@@ -1569,7 +1484,7 @@ export const BoardingPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">Amount ($) *</label>
+                <label className="block font-semibold text-slate-700 mb-1">টাকার পরিমাণ (৳) *</label>
                 <input
                   type="number"
                   required
@@ -1585,7 +1500,7 @@ export const BoardingPage: React.FC = () => {
             <div className="grid grid-cols-2 gap-3">
               {txModalType === 'fee' ? (
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Fee Category *</label>
+                  <label className="block font-semibold text-slate-700 mb-1">ফির ক্যাтаগরি *</label>
                   <select
                     value={txCategory}
                     onChange={(e) => setTxCategory(e.target.value)}
@@ -1598,10 +1513,10 @@ export const BoardingPage: React.FC = () => {
                 </div>
               ) : (
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Reference / Voucher #</label>
+                  <label className="block font-semibold text-slate-700 mb-1">রেফারেন্স / ভাউচার নং</label>
                   <input
                     type="text"
-                    placeholder="e.g. Bill #8210"
+                    placeholder="যেমন: বিল #৮২১০"
                     value={txReference}
                     onChange={(e) => setTxReference(e.target.value)}
                     className="w-full rounded-lg border border-slate-200 p-2 text-xs text-slate-900 font-mono focus:outline-hidden focus:border-emerald-600"
@@ -1610,7 +1525,7 @@ export const BoardingPage: React.FC = () => {
               )}
 
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">Status *</label>
+                <label className="block font-semibold text-slate-700 mb-1">স্ট্যাটাস *</label>
                 <select
                   value={txStatus}
                   onChange={(e) => setTxStatus(e.target.value)}
@@ -1624,10 +1539,10 @@ export const BoardingPage: React.FC = () => {
             </div>
 
             <div>
-              <label className="block font-semibold text-slate-700 mb-1">Note</label>
+              <label className="block font-semibold text-slate-700 mb-1">নোট</label>
               <input
                 type="text"
-                placeholder="e.g. Paid in full for October 2026"
+                placeholder="যেমন: চলতি মাসের সম্পূর্ণ পরিশোধ"
                 value={txNote}
                 onChange={(e) => setTxNote(e.target.value)}
                 className="w-full rounded-lg border border-slate-200 p-2 text-xs text-slate-900 focus:outline-hidden focus:border-emerald-600"
@@ -1635,7 +1550,7 @@ export const BoardingPage: React.FC = () => {
             </div>
 
             <div>
-              <label className="block font-semibold text-slate-700 mb-1">Description / Particulars *</label>
+              <label className="block font-semibold text-slate-700 mb-1">বিবরণ *</label>
               <textarea
                 rows={2}
                 required
@@ -1651,14 +1566,14 @@ export const BoardingPage: React.FC = () => {
                 onClick={() => setIsAddTxOpen(false)}
                 className="rounded-lg border border-slate-200 px-4 py-2 font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
               >
-                Cancel
+                বাতিল
               </button>
               <button
                 type="submit"
                 disabled={isSubmittingTx}
                 className="rounded-lg bg-emerald-700 px-5 py-2 font-semibold text-white hover:bg-emerald-800 disabled:opacity-50 cursor-pointer"
               >
-                {isSubmittingTx ? 'Saving...' : 'Save Transaction'}
+                {isSubmittingTx ? 'সংরক্ষণ হচ্ছে...' : 'লেনদেন সংরক্ষণ করুন'}
               </button>
             </div>
           </form>
@@ -1670,8 +1585,8 @@ export const BoardingPage: React.FC = () => {
         <Modal
           isOpen={!!editingTransaction}
           onClose={() => setEditingTransaction(null)}
-          title={`Edit Boarding Transaction`}
-          subtitle="Modify transaction record inside boardingTransactions collection"
+          title="বোর্ডিং লেনদেন সম্পাদনা"
+          subtitle="লেনদেনের রেকর্ড সংশোধন করুন"
           maxWidth="md"
         >
           <form onSubmit={handleEditTxSubmit} className="space-y-4 text-xs">
@@ -1684,7 +1599,7 @@ export const BoardingPage: React.FC = () => {
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">Date *</label>
+                <label className="block font-semibold text-slate-700 mb-1">তারিখ *</label>
                 <div className="relative">
                   <Calendar className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
                   <input
@@ -1698,22 +1613,22 @@ export const BoardingPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">Type *</label>
+                <label className="block font-semibold text-slate-700 mb-1">ধরণ *</label>
                 <select
                   value={editTxType}
                   onChange={(e) => setEditTxType(e.target.value)}
                   className="w-full rounded-lg border border-slate-200 p-2.5 text-xs text-slate-900 bg-white focus:outline-hidden"
                 >
-                  <option value="fee">Boarding Fee</option>
-                  <option value="foodExpense">Food Expense</option>
-                  <option value="otherExpense">Other Expense</option>
+                  <option value="fee">বোর্ডিং ফি</option>
+                  <option value="foodExpense">খাবার খরচ</option>
+                  <option value="otherExpense">অন্যান্য খরচ</option>
                 </select>
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">Category *</label>
+                <label className="block font-semibold text-slate-700 mb-1">ক্যাটাগরি *</label>
                 <select
                   value={editTxCategory}
                   onChange={(e) => setEditTxCategory(e.target.value)}
@@ -1726,7 +1641,7 @@ export const BoardingPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">Amount ($) *</label>
+                <label className="block font-semibold text-slate-700 mb-1">টাকার পরিমাণ (৳) *</label>
                 <input
                   type="number"
                   required
@@ -1741,7 +1656,7 @@ export const BoardingPage: React.FC = () => {
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">Payment Method *</label>
+                <label className="block font-semibold text-slate-700 mb-1">পেমেন্ট মাধ্যম *</label>
                 <select
                   value={editTxPaymentMethod}
                   onChange={(e) => setEditTxPaymentMethod(e.target.value)}
@@ -1754,7 +1669,7 @@ export const BoardingPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">Status *</label>
+                <label className="block font-semibold text-slate-700 mb-1">স্ট্যাটাস *</label>
                 <select
                   value={editTxStatus}
                   onChange={(e) => setEditTxStatus(e.target.value)}
@@ -1769,7 +1684,7 @@ export const BoardingPage: React.FC = () => {
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">Reference / Voucher #</label>
+                <label className="block font-semibold text-slate-700 mb-1">রেফারেন্স / ভাউচার নং</label>
                 <input
                   type="text"
                   value={editTxReference}
@@ -1779,7 +1694,7 @@ export const BoardingPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">Note / Remarks</label>
+                <label className="block font-semibold text-slate-700 mb-1">নোট</label>
                 <input
                   type="text"
                   value={editTxNote}
@@ -1790,7 +1705,7 @@ export const BoardingPage: React.FC = () => {
             </div>
 
             <div>
-              <label className="block font-semibold text-slate-700 mb-1">Description *</label>
+              <label className="block font-semibold text-slate-700 mb-1">বিবরণ *</label>
               <textarea
                 rows={2}
                 required
@@ -1806,14 +1721,14 @@ export const BoardingPage: React.FC = () => {
                 onClick={() => setEditingTransaction(null)}
                 className="rounded-lg border border-slate-200 px-4 py-2 font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
               >
-                Cancel
+                বাতিল
               </button>
               <button
                 type="submit"
                 disabled={isUpdatingTx}
                 className="rounded-lg bg-emerald-700 px-5 py-2 font-semibold text-white hover:bg-emerald-800 disabled:opacity-50 cursor-pointer"
               >
-                {isUpdatingTx ? 'Saving Changes...' : 'Save Changes'}
+                {isUpdatingTx ? 'সংরক্ষণ হচ্ছে...' : 'পরিবর্তন সংরক্ষণ করুন'}
               </button>
             </div>
           </form>
@@ -1825,24 +1740,24 @@ export const BoardingPage: React.FC = () => {
         <Modal
           isOpen={!!deletingTransaction}
           onClose={() => setDeletingTransaction(null)}
-          title="Delete Boarding Transaction"
-          subtitle="Are you sure you want to delete this Boarding transaction?"
+          title="বোর্ডিং লেনদেন মুছে ফেলুন"
+          subtitle="আপনি কি নিশ্চিতভাবে এই লেনদেনটি মুছে ফেলতে চান?"
           maxWidth="sm"
         >
           <div className="space-y-4 text-xs">
             <div className="flex items-start gap-3 rounded-lg bg-rose-50 p-3.5 text-rose-800 border border-rose-200">
               <AlertCircle className="h-5 w-5 text-rose-600 shrink-0 mt-0.5" />
               <div>
-                <span className="font-bold block">Irreversible Deletion</span>
-                Deleting this record will permanently remove it from Firestore and instantly update the Boarding balance.
+                <span className="font-bold block">স্থায়ীভাবে মুছে ফেলা</span>
+                এই রেকর্ডটি মুছে ফেললে তা ডাটাবেস থেকে স্থায়ীভাবে মুছে যাবে এবং বোর্ডিং ব্যালেন্স স্বয়ংক্রিয়ভাবে আপডেট হবে।
               </div>
             </div>
 
             <div className="rounded-lg bg-slate-50 p-3 border border-slate-100 space-y-1.5">
-              <div>Type: <strong className="text-slate-900 uppercase font-bold">{deletingTransaction.type}</strong></div>
-              <div>Category: <strong className="text-slate-800 font-semibold">{deletingTransaction.category}</strong></div>
-              <div>Amount: <strong className="text-slate-900 font-mono font-bold">${deletingTransaction.amount.toLocaleString()}</strong></div>
-              <div>Date: <strong className="text-slate-700 font-mono">{deletingTransaction.date}</strong></div>
+              <div>ধরণ: <strong className="text-slate-900 uppercase font-bold">{deletingTransaction.type}</strong></div>
+              <div>ক্যাটাগরি: <strong className="text-slate-800 font-semibold">{deletingTransaction.category}</strong></div>
+              <div>টাকা: <strong className="text-slate-900 font-mono font-bold">৳{deletingTransaction.amount.toLocaleString()}</strong></div>
+              <div>তারিখ: <strong className="text-slate-700 font-mono">{deletingTransaction.date}</strong></div>
             </div>
 
             <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
@@ -1851,7 +1766,7 @@ export const BoardingPage: React.FC = () => {
                 onClick={() => setDeletingTransaction(null)}
                 className="rounded-lg border border-slate-200 px-4 py-2 font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
               >
-                Cancel
+                বাতিল
               </button>
               <button
                 type="button"
@@ -1859,7 +1774,7 @@ export const BoardingPage: React.FC = () => {
                 onClick={handleDeleteTxSubmit}
                 className="rounded-lg bg-rose-600 px-4 py-2 font-semibold text-white hover:bg-rose-700 disabled:opacity-50 cursor-pointer"
               >
-                {isDeletingTx ? 'Deleting...' : 'Delete Transaction'}
+                {isDeletingTx ? 'মুছে ফেলা হচ্ছে...' : 'লেনদেন মুছে ফেলুন'}
               </button>
             </div>
           </div>

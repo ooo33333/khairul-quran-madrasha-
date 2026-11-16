@@ -81,7 +81,7 @@ export const LoginPage: React.FC = () => {
             </div>
           )}
           <h1 className="text-xl font-black tracking-widest text-blue-900 font-mono">
-            {madrasaInfo?.name || 'খায়রুল কুরআন মাদ্রাসা অফিস'}
+            {madrasaInfo?.name || 'খাইরুল কুরআন মাদ্রাসা অফিস'}
           </h1>
           <h2 className="mt-1 text-xs font-bold uppercase tracking-wider text-slate-600">
             {madrasaInfo?.tagline || 'Madrasa Office Management System'}

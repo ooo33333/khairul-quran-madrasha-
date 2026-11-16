@@ -11,11 +11,13 @@ import { DashboardPage } from './pages/DashboardPage';
 import { StudentListPage } from './pages/Students/StudentListPage';
 import { StudentAdmissionPage } from './pages/Students/StudentAdmissionPage';
 import { StudentInfoPage } from './pages/Students/StudentInfoPage';
+import { TeacherRecruitmentPage } from './pages/Teachers/TeacherRecruitmentPage';
 import { FeesManagerPage } from './pages/StudentFees/FeesManagerPage';
-import { AibAccountPage } from './pages/AibAccount/AibAccountPage';
 import { RevolvingFundPage } from './pages/RevolvingFund/RevolvingFundPage';
 import { BoardingPage } from './pages/Boarding/BoardingPage';
 import { AccountsPage } from './pages/Accounts/AccountsPage';
+import { YearlyMonthlyDailyAccountsPage } from './pages/Accounts/YearlyMonthlyDailyAccountsPage';
+import { ExamMarksPage } from './pages/Exams/ExamMarksPage';
 import { SettingsPage } from './pages/Settings/SettingsPage';
 import { RefreshCw, School, Shield } from 'lucide-react';
 
@@ -62,17 +64,6 @@ const AppContent: React.FC = () => {
         if (activeSubItem === 'fee-collection') return 'Fee Collection';
         if (activeSubItem === 'due-fees') return 'Due Fees';
         return 'Monthly Fees';
-      case 'aib-account':
-        if (activeSubItem === 'aib-expense') return 'Aib Expense';
-        if (activeSubItem === 'aib-balance') return 'Aib Balance';
-        if (activeSubItem === 'aib-transactions') return 'Aib Transactions';
-        return 'Aib Collection';
-      case 'revolving-fund':
-        if (activeSubItem === 'fund-distribution') return 'Fund Distribution';
-        if (activeSubItem === 'fund-return') return 'Fund Return';
-        if (activeSubItem === 'fund-balance') return 'Fund Balance';
-        if (activeSubItem === 'fund-transactions') return 'Fund Transactions';
-        return 'Fund Collection';
       case 'boarding':
         if (activeSubItem === 'boarding-fees') return 'Boarding Fees';
         if (activeSubItem === 'food-expense') return 'Food Expense';
@@ -83,7 +74,11 @@ const AppContent: React.FC = () => {
         if (activeSubItem === 'expense') return 'Expense';
         if (activeSubItem === 'transactions') return 'Transactions';
         if (activeSubItem === 'balance') return 'Balance';
+        if (activeSubItem === 'yearly-monthly-daily') return 'Yearly, Monthly & Daily Reports';
         return 'Income';
+      case 'exams':
+        if (activeSubItem === 'report-cards') return 'Report Cards';
+        return 'Exam Marks';
       case 'settings':
         return 'Settings';
       default:
@@ -96,19 +91,21 @@ const AppContent: React.FC = () => {
       case 'dashboard':
         return <DashboardPage />;
       case 'students':
+        if (activeSubItem === 'teacher-recruitment') return <TeacherRecruitmentPage />;
         if (activeSubItem === 'student-admission') return <StudentAdmissionPage />;
         if (activeSubItem === 'student-information') return <StudentInfoPage />;
         return <StudentListPage />;
       case 'student-fees':
         return <FeesManagerPage />;
-      case 'aib-account':
-        return <AibAccountPage />;
       case 'revolving-fund':
         return <RevolvingFundPage />;
       case 'boarding':
         return <BoardingPage />;
       case 'accounts':
+        if (activeSubItem === 'yearly-monthly-daily') return <YearlyMonthlyDailyAccountsPage />;
         return <AccountsPage />;
+      case 'exams':
+        return <ExamMarksPage />;
       case 'settings':
         return <SettingsPage />;
       default:

@@ -11,12 +11,13 @@ export const translations: Translations = {
   // ==========================================
   // 1. BRAND & NAVIGATION
   // ==========================================
-  'Madrasa Office': { en: 'Khairul Quran Madrasa Office', bn: 'খায়রুল কুরআন মাদ্রাসা অফিস' },
+  'Madrasa Office': { en: 'Khairul Quran Madrasa Office', bn: 'খাইরুল কুরআন মাদ্রাসা অফিস' },
   'Office Management': { en: 'Office Management', bn: 'অফিস ম্যানেজমেন্ট' },
   'Madrasa Office Management': { en: 'Madrasa Office Management', bn: 'মাদ্রাসা অফিস ম্যানেজমেন্ট' },
   'Madrasa Management System': { en: 'Madrasa Management System', bn: 'মাদ্রাসা ম্যানেজমেন্ট সিস্টেম' },
   'Dashboard': { en: 'Dashboard', bn: 'ড্যাশবোর্ড' },
   'Students': { en: 'Students', bn: 'শিক্ষার্থী' },
+  'Teacher Recruitment': { en: 'Teacher Recruitment', bn: 'শিক্ষক নিয়োগ' },
   'Student List': { en: 'Student List', bn: 'শিক্ষার্থী তালিকা' },
   'Student Admission': { en: 'Student Admission', bn: 'শিক্ষার্থী ভর্তি' },
   'Student Information': { en: 'Student Information', bn: 'শিক্ষার্থী তথ্য' },
@@ -26,17 +27,17 @@ export const translations: Translations = {
   'Other Fees': { en: 'Other Fees', bn: 'অন্যান্য ফি' },
   'Fee Collection': { en: 'Fee Collection', bn: 'ফি আদায়' },
   'Due Fees': { en: 'Due Fees', bn: 'বকেয়া ফি' },
-  'Aib Account': { en: 'Aib Account', bn: 'আইব একাউন্ট' },
-  'Aib Collection': { en: 'Aib Collection', bn: 'আইব সংগ্রহ' },
-  'Aib Expense': { en: 'Aib Expense', bn: 'আইব খরচ' },
-  'Aib Balance': { en: 'Aib Balance', bn: 'আইব ব্যালেন্স' },
-  'Aib Transactions': { en: 'Aib Transactions', bn: 'আইব লেনদেন' },
-  'Revolving Fund': { en: 'Revolving Fund', bn: 'আবর্তনশীল তহবিল' },
-  'Fund Collection': { en: 'Fund Collection', bn: 'তহবিল সংগ্রহ' },
-  'Fund Distribution': { en: 'Fund Distribution', bn: 'তহবিল বিতরণ' },
-  'Fund Return': { en: 'Fund Return', bn: 'তহবিল ফেরত' },
-  'Fund Balance': { en: 'Fund Balance', bn: 'তহবিল ব্যালেন্স' },
-  'Fund Transactions': { en: 'Fund Transactions', bn: 'তহবিল লেনদেন' },
+  'Aib Account': { en: 'Aib Account', bn: 'গোরাবাত তহবিল' },
+  'Aib Collection': { en: 'Aib Collection', bn: 'গোরাবাত তহবিল সংগ্রহ' },
+  'Aib Expense': { en: 'Aib Expense', bn: 'গোরাবাত তহবিল ব্যয়' },
+  'Aib Balance': { en: 'Aib Balance', bn: 'গোরাবাত তহবিল ব্যালেন্স' },
+  'Aib Transactions': { en: 'Aib Transactions', bn: 'গোরাবাত তহবিল লেনদেন' },
+  'Revolving Fund': { en: 'Revolving Fund', bn: 'ঘুরাবা তহবিল' },
+  'Fund Collection': { en: 'Fund Collection', bn: 'ঘুরাবা তহবিল সংগ্রহ' },
+  'Fund Distribution': { en: 'Fund Distribution', bn: 'ঘুরাবা তহবিল বিতরণ' },
+  'Fund Return': { en: 'Fund Return', bn: 'ঘুরাবা তহবিল ফেরত' },
+  'Fund Balance': { en: 'Fund Balance', bn: 'ঘুরাবা তহবিল ব্যালেন্স' },
+  'Fund Transactions': { en: 'Fund Transactions', bn: 'ঘুরাবা তহবিল লেনদেন' },
   'Boarding': { en: 'Boarding', bn: 'বোর্ডিং (আবাসিক)' },
   'Boarding Students': { en: 'Boarding Students', bn: 'বোর্ডিং শিক্ষার্থী' },
   'Boarding Fees': { en: 'Boarding Fees', bn: 'বোর্ডিং ফি' },
@@ -48,6 +49,7 @@ export const translations: Translations = {
   'Expense': { en: 'Expense', bn: 'ব্যয়' },
   'Transactions': { en: 'Transactions', bn: 'লেনদেনসমূহ' },
   'Balance': { en: 'Balance', bn: 'ব্যালেন্স' },
+  'Yearly, Monthly & Daily Reports': { en: 'Yearly, Monthly & Daily Reports', bn: 'বছরওয়ারি, মাসওয়ারি ও দিনওয়ারি হিসাব' },
   'Settings': { en: 'Settings', bn: 'সেটিংস' },
   'Madrasa Information': { en: 'Madrasa Information', bn: 'মাদ্রাসা তথ্য' },
   'User Management': { en: 'User Management', bn: 'ব্যবহারকারী নিয়ন্ত্রণ' },
@@ -265,7 +267,7 @@ export const translations: Translations = {
   'Issue student fee receipt': { en: 'Issue student fee receipt', bn: 'ফি রশিদ প্রদান করুন' },
   'Record Office Expense': { en: 'Record Office Expense', bn: 'অফিস খরচ লিপিবদ্ধ করুন' },
   'Add expense ledger entry': { en: 'Add expense ledger entry', bn: 'খরচ লেজারে এন্ট্রি করুন' },
-  'Aib Account Donation': { en: 'Aib Account Donation', bn: 'আইব তহবিল অনুদান' },
+  'Aib Account Donation': { en: 'Aib Account Donation', bn: 'গোরাবাত তহবিল অনুদান' },
   'Record welfare contribution': { en: 'Record welfare contribution', bn: 'সাহায্য ও দান সংগ্রহ' },
   'Revolving Fund Aid': { en: 'Revolving Fund Aid', bn: 'আবর্তনশীল তহবিল সাহায্য' },
   'Qard-e-Hasana distribution': { en: 'Qard-e-Hasana distribution', bn: 'ক্বরযে হাসানা বিতরণ' },
@@ -389,19 +391,19 @@ export const translations: Translations = {
   // ==========================================
   // 8. AIB ACCOUNT MODULE
   // ==========================================
-  'Aib Account (Endowment & Welfare)': { en: 'Aib Account (Endowment & Welfare)', bn: 'আইব একাউন্ট (দান ও কল্যাণ তহবিল)' },
+  'Aib Account (Endowment & Welfare)': { en: 'Aib Account (Endowment & Welfare)', bn: 'গোরাবাত তহবিল (দান ও কল্যাণ তহবিল)' },
   'Endowment funds, donations, and welfare expenses registry': {
     en: 'Endowment funds, donations, and welfare expenses registry',
     bn: 'মাদ্রাসার ওয়াকফ, দান-সদকা ও কল্যাণমূলক ব্যয়ের রেজিস্ট্রি',
   },
-  'Total Aib Balance': { en: 'Total Aib Balance', bn: 'আইব মোট ব্যালেন্স' },
+  'Total Aib Balance': { en: 'Total Aib Balance', bn: 'গোরাবাত মোট ব্যালেন্স' },
   'Total Collection': { en: 'Total Collection', bn: 'মোট সংগ্রহ' },
   'Total Expense': { en: 'Total Expense', bn: 'মোট খরচ' },
   'Net Available Balance': { en: 'Net Available Balance', bn: 'মোট অবশিষ্ট ব্যালেন্স' },
-  'Record Aib Collection': { en: 'Record Aib Collection', bn: 'আইব সংগ্রহ রেকর্ড করুন' },
-  'Record Aib Expense': { en: 'Record Aib Expense', bn: 'আইব খরচ রেকর্ড করুন' },
-  'Record Aib Transaction': { en: 'Record Aib Transaction', bn: 'আইব লেনদেন রেকর্ড করুন' },
-  'Aib Transaction Ledger': { en: 'Aib Transaction Ledger', bn: 'আইব লেনদেন লেজার' },
+  'Record Aib Collection': { en: 'Record Aib Collection', bn: 'গোরাবাত তহবিল সংগ্রহ রেকর্ড করুন' },
+  'Record Aib Expense': { en: 'Record Aib Expense', bn: 'গোরাবাত তহবিল ব্যয় রেকর্ড করুন' },
+  'Record Aib Transaction': { en: 'Record Aib Transaction', bn: 'গোরাবাত তহবিল লেনদেন রেকর্ড করুন' },
+  'Aib Transaction Ledger': { en: 'Aib Transaction Ledger', bn: 'গোরাবাত তহবিল লেনদেন লেজার' },
   'Edit Transaction': { en: 'Edit Transaction', bn: 'লেনদেন সম্পাদনা' },
   'Delete Transaction': { en: 'Delete Transaction', bn: 'লেনদেন মুছে ফেলুন' },
   'Confirm Transaction Deletion': { en: 'Confirm Transaction Deletion', bn: 'লেনদেন মুছে ফেলার নিশ্চিতকরণ' },
@@ -561,11 +563,11 @@ export const translations: Translations = {
   },
   'Overview of the Aib endowment account reserve and ledger positions': {
     en: 'Overview of the Aib endowment account reserve and ledger positions',
-    bn: 'আইব ওয়াকফ একাউন্টের তহবিল ও ব্যালেন্স পর্যালোচনা',
+    bn: 'গোরাবাত ওয়াকফ একাউন্টের তহবিল ও ব্যালেন্স পর্যালোচনা',
   },
   'Master ledger of all Aib collections and expense postings': {
     en: 'Master ledger of all Aib collections and expense postings',
-    bn: 'সকল আইব সংগ্রহ ও ব্যয়ের প্রধান লেজার',
+    bn: 'সকল গোরাবাত তহবিল সংগ্রহ ও ব্যয়ের প্রধান লেজার',
   },
   'Special endowment and welfare funds ledger': {
     en: 'Special endowment and welfare funds ledger',
@@ -573,7 +575,7 @@ export const translations: Translations = {
   },
   'All cumulative Aib endowment receipts': {
     en: 'All cumulative Aib endowment receipts',
-    bn: 'মোট সংগৃহীত আইব প্রাপ্তি',
+    bn: 'মোট সংগৃহীত গোরাবাত প্রাপ্তি',
   },
   'Cumulative aid and welfare disbursements': {
     en: 'Cumulative aid and welfare disbursements',
@@ -581,23 +583,23 @@ export const translations: Translations = {
   },
   'Net available Aib account balance': {
     en: 'Net available Aib account balance',
-    bn: 'আইব তহবিলের মোট বর্তমান ব্যালেন্স',
+    bn: 'গোরাবাত তহবিলের মোট বর্তমান ব্যালেন্স',
   },
   'Aib Reserve Reconciliation Statement': {
     en: 'Aib Reserve Reconciliation Statement',
-    bn: 'আইব তহবিল সমন্বয় বিবরণী',
+    bn: 'গোরাবাত তহবিল সমন্বয় বিবরণী',
   },
   'Total Aib Collection': {
     en: 'Total Aib Collection',
-    bn: 'মোট আইব সংগ্রহ',
+    bn: 'মোট গোরাবাত তহবিল সংগ্রহ',
   },
   'Total Aib Expense': {
     en: 'Total Aib Expense',
-    bn: 'মোট আইব খরচ',
+    bn: 'মোট গোরাবাত তহবিল ব্যয়',
   },
   'Net Aib Reserve Balance': {
     en: 'Net Aib Reserve Balance',
-    bn: 'আইব তহবিলের নিট উদ্বৃত্ত',
+    bn: 'গোরাবাত তহবিলের নিট উদ্বৃত্ত',
   },
   'Search by desc, category, ref, note...': {
     en: 'Search by desc, category, ref, note...',
@@ -616,7 +618,7 @@ export const translations: Translations = {
   'Aib Remarks / Note': { en: 'Remarks / Note', bn: 'মন্তব্য / নোট' },
   'No Aib transactions found in this view': {
     en: 'No Aib transactions found in this view',
-    bn: 'এই ভিউতে কোনো আইব লেনদেন পাওয়া যায়নি',
+    bn: 'এই ভিউতে কোনো গোরাবাত তহবিল লেনদেন পাওয়া যায়নি',
   },
   'Records are loaded directly from Firebase Firestore.': {
     en: 'Records are loaded directly from Firebase Firestore.',
@@ -624,14 +626,14 @@ export const translations: Translations = {
   },
   'Add ledger entry into the Aib endowment account': {
     en: 'Add ledger entry into the Aib endowment account',
-    bn: 'আইব ওয়াকফ একাউন্টে লেনদেন রেকর্ড করুন',
+    bn: 'গোরাবাত ওয়াকফ একাউন্টে লেনদেন রেকর্ড করুন',
   },
   'Brief summary of transaction details...': {
     en: 'Brief summary of transaction details...',
     bn: 'লেনদেনের সংক্ষিপ্ত বিবরণ দিন...',
   },
   'Save Entry': { en: 'Save Entry', bn: 'এন্ট্রি সংরক্ষণ করুন' },
-  'Edit Aib Transaction': { en: 'Edit Aib Transaction', bn: 'আইব লেনদেন সম্পাদনা' },
+  'Edit Aib Transaction': { en: 'Edit Aib Transaction', bn: 'গোরাবাত তহবিল লেনদেন সম্পাদনা' },
   'Update transaction specifications in Firestore': {
     en: 'Update transaction specifications in Firestore',
     bn: 'ডাটাবেজে লেনদেনের তথ্য পরিবর্তন করুন',
@@ -652,10 +654,10 @@ export const translations: Translations = {
   'Transaction updated successfully': { en: 'Transaction updated successfully', bn: 'লেনদেন সফলভাবে আপডেট হয়েছে' },
   'Transaction deleted successfully': { en: 'Transaction deleted successfully', bn: 'লেনদেন সফলভাবে মুছে ফেলা হয়েছে' },
 
-  // Revolving Fund
+  // Revolving Fund (ঘুরাবা তহবিল)
   'Disbursements of zero-interest welfare loans and revolving grants': {
     en: 'Disbursements of zero-interest welfare loans and revolving grants',
-    bn: 'সুদমুক্ত কল্যাণ করজ ও ঘূর্ণায়মান তহবিল বিতরণ',
+    bn: 'সুদমুক্ত কল্যাণ করজ ও ঘুরাবা তহবিল বিতরণ',
   },
   'Inflows and repayment settlements of previously issued revolving loans': {
     en: 'Inflows and repayment settlements of previously issued revolving loans',
@@ -663,7 +665,7 @@ export const translations: Translations = {
   },
   'Live ledger position of community reserve fund and circulating liquidity': {
     en: 'Live ledger position of community reserve fund and circulating liquidity',
-    bn: 'আবর্তনশীল তহবিল ও চলমান তারল্যের হিসাব পর্যালোচনা',
+    bn: 'ঘুরাবা তহবিল ও চলমান তারল্যের হিসাব পর্যালোচনা',
   },
   'Complete financial journal of all collections, loans, and returns': {
     en: 'Complete financial journal of all collections, loans, and returns',
@@ -671,7 +673,7 @@ export const translations: Translations = {
   },
   'Self-replenishing community fund distributions & returns': {
     en: 'Self-replenishing community fund distributions & returns',
-    bn: 'ঘূর্ণায়মান তহবিল সংগ্রহ, করজ বিতরণ এবং ফেরত রেজিস্ট্রি',
+    bn: 'ঘুরাবা তহবিল সংগ্রহ, করজ বিতরণ এবং ফেরত রেজিস্ট্রি',
   },
   'Total Inflow / Capital': { en: 'Total Inflow / Capital', bn: 'মোট মূলধন / সংগ্রহ' },
   'Circulating Loans': { en: 'Circulating Loans', bn: 'চলমান বিতরণকৃত করজ' },
@@ -689,10 +691,21 @@ export const translations: Translations = {
   'Person Name / Recipient': { en: 'Person Name / Recipient', bn: 'গ্রহীতা / ব্যক্তির নাম' },
   'Fund Entry Type': { en: 'Fund Entry Type', bn: 'তহবিল এন্ট্রির ধরণ' },
   'Voucher / Slip Reference': { en: 'Voucher / Slip Reference', bn: 'ভাউচার / স্লিপ রেফারেন্স' },
-  'Record Revolving Fund Entry': { en: 'Record Revolving Fund Entry', bn: 'আবর্তনশীল তহবিল লেনদেন রেকর্ড' },
+  'Record Revolving Fund Entry': { en: 'Record Revolving Fund Entry', bn: 'ঘুরাবা তহবিল লেনদেন রেকর্ড' },
   'Edit Fund Transaction': { en: 'Edit Fund Transaction', bn: 'তহবিল লেনদেন সম্পাদনা' },
   'Delete Fund Transaction': { en: 'Delete Fund Transaction', bn: 'তহবিল লেনদেন মুছে ফেলুন' },
   'Save Fund Entry': { en: 'Save Fund Entry', bn: 'তহবিল এন্ট্রি সংরক্ষণ করুন' },
+  'Revolving Fund Solvent Accounting Formula': { en: 'Revolving Fund Solvent Accounting Formula', bn: 'ঘুরাবা তহবিল সচ্ছল হিসাব সমীকরণ' },
+  'Completed Collections': { en: 'Completed Collections', bn: 'সম্পন্ন সংগ্রহসমূহ' },
+  'Completed Returns': { en: 'Completed Returns', bn: 'সম্পন্ন ফেরতসমূহ' },
+  'Completed Distributions': { en: 'Completed Distributions', bn: 'সম্পন্ন বিতরণসমূহ' },
+  'Net Solvency Pool': { en: 'Net Solvency Pool', bn: 'নিট সচ্ছল তহবিল' },
+  'Capital pooled from contributors': { en: 'Capital pooled from contributors', bn: 'দাতাদের কাছ থেকে সংগৃহীত মূলধন' },
+  'Active welfare disbursements out': { en: 'Active welfare disbursements out', bn: 'সক্রিয় কল্যাণমূলক বিতরণ' },
+  'Advances repaid back to pool': { en: 'Advances repaid back to pool', bn: 'তহবিলে পরিশোধিত অগ্রিম' },
+  'Net solvent liquid pool': { en: 'Net solvent liquid pool', bn: 'নিট সচ্ছল তরল তহবিল' },
+  'Post interest-free support to the revolving capital ledger': { en: 'Post interest-free support to the revolving capital ledger', bn: 'ঘুরাবা তহবিলের মূলধন লেজারে সুদমুক্ত সহায়তা পোস্ট করুন' },
+  'Update record specifications in Firestore': { en: 'Update record specifications in Firestore', bn: 'ফায়ারস্টোরে রেকর্ড বিবরণ আপডেট করুন' },
   'Recipient or contributor name is required.': {
     en: 'Recipient or contributor name is required.',
     bn: 'গ্রহীতা বা দাতার নাম আবশ্যক।',

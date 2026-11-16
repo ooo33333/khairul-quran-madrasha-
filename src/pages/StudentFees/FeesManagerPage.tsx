@@ -26,26 +26,26 @@ import { Breadcrumb } from '../../components/common/Breadcrumb';
 import { Modal } from '../../components/common/Modal';
 
 const MONTH_OPTIONS = [
-  'January 2026',
-  'February 2026',
-  'March 2026',
-  'April 2026',
-  'May 2026',
-  'June 2026',
-  'July 2026',
-  'August 2026',
-  'September 2026',
-  'October 2026',
-  'November 2026',
-  'December 2026',
+  'জানুয়ারি ২০২৬',
+  'ফেব্রুয়ারি ২০২৬',
+  'মার্চ ২০২৬',
+  'এপ্রিল ২০২৬',
+  'মে ২০২৬',
+  'জুন ২০২৬',
+  'জুলাই ২০২৬',
+  'আগস্ট ২০২৬',
+  'সেপ্টেম্বর ২০২৬',
+  'অক্টোবর ২০২৬',
+  'নভেম্বর ২০২৬',
+  'ডিসেম্বর ২০২৬',
 ];
 
 const OTHER_FEE_CATEGORIES = [
-  'Exam Fee',
-  'Form Fee',
-  'ID Card Fee',
-  'Certificate Fee',
-  'Other',
+  'পরীক্ষা ফি',
+  'ফর্ম ফি',
+  'আইডি কার্ড ফি',
+  'সনদপত্র ফি',
+  'অন্যান্য',
 ];
 
 export const FeesManagerPage: React.FC = () => {
@@ -57,6 +57,7 @@ export const FeesManagerPage: React.FC = () => {
     students,
     addFeePayment,
     updateFeePayment,
+    updateFeeStatus,
     deleteFeePayment,
     searchQuery,
     prefillFeeStudentId,
@@ -65,6 +66,12 @@ export const FeesManagerPage: React.FC = () => {
     madrasaInfo,
     t,
   } = useApp();
+
+  // Due Collection Modal State
+  const [collectingDueFee, setCollectingDueFee] = useState<FeeRecord | null>(null);
+  const [duePayAmount, setDuePayAmount] = useState<number | ''>(0);
+  const [isCollectingDue, setIsCollectingDue] = useState(false);
+  const [dueModalError, setDueModalError] = useState<string | null>(null);
 
   const [localSearch, setLocalSearch] = useState('');
   const [selectedClass, setSelectedClass] = useState('All');
@@ -75,8 +82,8 @@ export const FeesManagerPage: React.FC = () => {
   // Interactive Fee Collection Form State
   const [collectStudentId, setCollectStudentId] = useState('');
   const [collectFeeType, setCollectFeeType] = useState<FeeType>('Monthly Fee');
-  const [collectCategory, setCollectCategory] = useState('Exam Fee');
-  const [collectMonth, setCollectMonth] = useState('October 2026');
+  const [collectCategory, setCollectCategory] = useState('পরীক্ষা ফি');
+  const [collectMonth, setCollectMonth] = useState('অক্টোবর ২০২৬');
   const [totalAmount, setTotalAmount] = useState<number | ''>(100);
   const [paidAmount, setPaidAmount] = useState<number | ''>(100);
   const [paymentDate, setPaymentDate] = useState(new Date().toISOString().split('T')[0]);
@@ -130,13 +137,11 @@ export const FeesManagerPage: React.FC = () => {
   // Filter fees based on active sub-page & search & filters
   const filteredFees = useMemo(() => {
     return fees.filter((fee) => {
-      // 1. Sub-item filter
       if (activeSubItem === 'monthly-fees' && fee.feeType !== 'Monthly Fee') return false;
       if (activeSubItem === 'admission-fees' && fee.feeType !== 'Admission Fee') return false;
       if (activeSubItem === 'other-fees' && fee.feeType !== 'Other Fee' && fee.feeType !== 'Other') return false;
       if (activeSubItem === 'due-fees' && (fee.due <= 0 && fee.status === 'Paid')) return false;
 
-      // 2. Search query (Student ID, Student Name, Father Name)
       const q = effectiveSearch.trim().toLowerCase();
       if (q) {
         const studentObj = students.find((s) => s.id === fee.studentId);
@@ -151,22 +156,18 @@ export const FeesManagerPage: React.FC = () => {
         }
       }
 
-      // 3. Class filter
       if (selectedClass !== 'All' && fee.className !== selectedClass) {
         return false;
       }
 
-      // 4. Status filter
       if (selectedStatus !== 'All' && fee.status !== selectedStatus) {
         return false;
       }
 
-      // 5. Fee Type filter (used on due-fees)
       if (selectedFeeType !== 'All' && fee.feeType !== selectedFeeType) {
         return false;
       }
 
-      // 6. Payment Month filter (used on monthly-fees)
       if (selectedMonth !== 'All' && fee.month !== selectedMonth) {
         return false;
       }
@@ -217,32 +218,29 @@ export const FeesManagerPage: React.FC = () => {
   // Subpage Meta Titles
   const subPageTitles: Record<SubNavigationItem, { title: string; subtitle: string }> = {
     'monthly-fees': {
-      title: 'Monthly Fees',
-      subtitle: 'Class-wise monthly tuition fee billing and collection status',
+      title: 'মাসিক ফি',
+      subtitle: 'শ্রেণীভিত্তিক মাসিক টিউশন ফি বিলিং এবং আদায়ের অবস্থা',
     },
     'admission-fees': {
-      title: 'Admission Fees',
-      subtitle: 'Session enrollment and one-time admission fee receipts',
+      title: 'ভর্তি ফি',
+      subtitle: 'সেশন এনরোলমেন্ট এবং এককালীন ভর্তি ফি রসিদ',
     },
     'other-fees': {
-      title: 'Other Fees',
-      subtitle: 'Examination, form, ID card, and ancillary fee collections',
+      title: 'অন্যান্য ফি',
+      subtitle: 'পরীক্ষা, ফর্ম, আইডি কার্ড এবং আনুষঙ্গিক ফি সংগ্রহ',
     },
     'fee-collection': {
-      title: 'Fee Collection Desk',
-      subtitle: 'Process student fee receipts, record real-time payments and print invoices',
+      title: 'ফি আদায় ডেস্ক',
+      subtitle: 'শিক্ষার্থী ফি রসিদ প্রসেস করুন, রিয়েল-টাইম পেমেন্ট রেকর্ড করুন এবং ইনভয়েস প্রিন্ট করুন',
     },
     'due-fees': {
-      title: 'Due Fees Ledger',
-      subtitle: 'Outstanding fee balances requiring collection and settlement',
+      title: 'বকেয়া ফি খাতা',
+      subtitle: 'বকেয়া ফি ব্যালেন্স যা সংগ্রহ এবং নিষ্পত্তি করা প্রয়োজন',
     },
+    'teacher-recruitment': { title: '', subtitle: '' },
     'student-list': { title: '', subtitle: '' },
     'student-admission': { title: '', subtitle: '' },
     'student-information': { title: '', subtitle: '' },
-    'aib-collection': { title: '', subtitle: '' },
-    'aib-expense': { title: '', subtitle: '' },
-    'aib-balance': { title: '', subtitle: '' },
-    'aib-transactions': { title: '', subtitle: '' },
     'fund-collection': { title: '', subtitle: '' },
     'fund-distribution': { title: '', subtitle: '' },
     'fund-return': { title: '', subtitle: '' },
@@ -257,6 +255,9 @@ export const FeesManagerPage: React.FC = () => {
     expense: { title: '', subtitle: '' },
     transactions: { title: '', subtitle: '' },
     balance: { title: '', subtitle: '' },
+    'yearly-monthly-daily': { title: '', subtitle: '' },
+    'exam-marks': { title: '', subtitle: '' },
+    'report-cards': { title: '', subtitle: '' },
     'madrasa-information': { title: '', subtitle: '' },
     'user-management': { title: '', subtitle: '' },
     'academic-year': { title: '', subtitle: '' },
@@ -266,11 +267,12 @@ export const FeesManagerPage: React.FC = () => {
     'reset-website-data': { title: '', subtitle: '' },
     'refresh-reload': { title: '', subtitle: '' },
     'system-restart-reboot': { title: '', subtitle: '' },
+    'data-backup': { title: '', subtitle: '' },
   };
 
   const currentMeta = subPageTitles[activeSubItem] || {
-    title: 'Student Fees',
-    subtitle: 'Manage fee schedules, collections and balances',
+    title: 'শিক্ষার্থী ফি',
+    subtitle: 'ফি সময়সূচী, সংগ্রহ এবং ব্যালেন্স পরিচালনা করুন',
   };
 
   // Handle Fee Collection Form Submission
@@ -279,11 +281,11 @@ export const FeesManagerPage: React.FC = () => {
     setFormError(null);
 
     if (!selectedStudent) {
-      setFormError('Please select a student from the registered list.');
+      setFormError('দয়া করে তালিকা থেকে একজন শিক্ষার্থী নির্বাচন করুন।');
       return;
     }
     if (!collectFeeType) {
-      setFormError('Fee Type is required.');
+      setFormError('ফি এর ধরণ আবশ্যক।');
       return;
     }
 
@@ -291,19 +293,19 @@ export const FeesManagerPage: React.FC = () => {
     const paid = typeof paidAmount === 'number' ? paidAmount : 0;
 
     if (total <= 0) {
-      setFormError('Total Amount must be greater than 0.');
+      setFormError('মোট পরিমাণ শূন্য বা ঋণাত্মক হতে পারবে না।');
       return;
     }
     if (paid < 0) {
-      setFormError('Paid Amount cannot be negative.');
+      setFormError('পরিশোধিত পরিমাণ ঋণাত্মক হতে পারবে না।');
       return;
     }
     if (paid > total) {
-      setFormError('Paid Amount cannot exceed Total Amount.');
+      setFormError('পরিশোধিত পরিমাণ মোট পরিমাণের চেয়ে বেশি হতে পারবে না।');
       return;
     }
     if (!paymentDate) {
-      setFormError('Payment Date is required.');
+      setFormError('পেমেন্টের তারিখ আবশ্যক।');
       return;
     }
 
@@ -324,21 +326,17 @@ export const FeesManagerPage: React.FC = () => {
         note: note.trim() || undefined,
       });
 
-      // Show receipt modal
       setViewingReceipt(createdRecord);
-
-      // Reset form fields
       setPaidAmount(total);
       setNote('');
     } catch (err: any) {
       console.error('Error recording fee:', err);
-      setFormError(err.message || 'Failed to save fee in Firestore.');
+      setFormError(err.message || 'ফায়ারস্টোরে ফি সংরক্ষণ করতে ব্যর্থ হয়েছে।');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Handle Edit Fee submission
   const handleSaveEditFee = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingFee) return;
@@ -348,15 +346,15 @@ export const FeesManagerPage: React.FC = () => {
     const paid = Number(editingFee.paid) || 0;
 
     if (total <= 0) {
-      setEditFormError('Total Amount must be greater than 0.');
+      setEditFormError('মোট পরিমাণ শূন্য হতে পারবে না।');
       return;
     }
     if (paid < 0) {
-      setEditFormError('Paid Amount cannot be negative.');
+      setEditFormError('পরিশোধিত পরিমাণ ঋণাত্মক হতে পারবে না।');
       return;
     }
     if (paid > total) {
-      setEditFormError('Paid Amount cannot exceed Total Amount.');
+      setEditFormError('পরিশোধিত পরিমাণ মোট পরিমাণের চেয়ে বেশি হতে পারবে না।');
       return;
     }
 
@@ -375,13 +373,12 @@ export const FeesManagerPage: React.FC = () => {
       setEditingFee(null);
     } catch (err: any) {
       console.error('Update fee error:', err);
-      setEditFormError(err.message || 'Failed to update fee record.');
+      setEditFormError(err.message || 'ফি রেকর্ড আপডেট করতে ব্যর্থ হয়েছে।');
     } finally {
       setIsUpdating(false);
     }
   };
 
-  // Handle Delete Fee Confirmation
   const handleConfirmDelete = async () => {
     if (!deletingFee) return;
     setIsDeleting(true);
@@ -392,6 +389,43 @@ export const FeesManagerPage: React.FC = () => {
       console.error('Delete fee error:', err);
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  const handleDueCollectionSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!collectingDueFee) return;
+    setDueModalError(null);
+
+    const amountToPay = typeof duePayAmount === 'number' ? duePayAmount : 0;
+    if (amountToPay <= 0) {
+      setDueModalError('আদায়কৃত পরিমাণ শূন্য বা ঋণাত্মক হতে পারবে না।');
+      return;
+    }
+    if (amountToPay > collectingDueFee.due) {
+      setDueModalError('আদায়কৃত পরিমাণ বকেয়া পরিমাণের চেয়ে বেশি হতে পারবে না।');
+      return;
+    }
+
+    setIsCollectingDue(true);
+    try {
+      await updateFeeStatus(collectingDueFee.id, amountToPay);
+      const updatedRecord = fees.find((f) => f.id === collectingDueFee.id);
+      const receiptTarget = updatedRecord
+        ? { ...updatedRecord }
+        : {
+            ...collectingDueFee,
+            paid: collectingDueFee.paid + amountToPay,
+            due: Math.max(0, collectingDueFee.due - amountToPay),
+            status: (collectingDueFee.paid + amountToPay) >= collectingDueFee.totalFee ? 'Paid' : ('Partial' as FeeStatus),
+          };
+      setCollectingDueFee(null);
+      setViewingReceipt(receiptTarget as FeeRecord);
+    } catch (err: any) {
+      console.error('Due collection error:', err);
+      setDueModalError(err.message || 'বকেয়া আদায় রেকর্ড করতে ব্যর্থ হয়েছে।');
+    } finally {
+      setIsCollectingDue(false);
     }
   };
 
@@ -408,10 +442,35 @@ export const FeesManagerPage: React.FC = () => {
     }
   };
 
+  const translateStatus = (st?: string) => {
+    if (!st) return '';
+    if (st === 'Paid') return 'পরিশোধিত';
+    if (st === 'Partial') return 'আংশিক';
+    if (st === 'Due') return 'বকেয়া';
+    return st;
+  };
+
+  const translateFeeType = (ft?: string) => {
+    if (!ft) return '';
+    if (ft === 'Monthly Fee') return 'মাসিক ফি';
+    if (ft === 'Admission Fee') return 'ভর্তি ফি';
+    if (ft === 'Other Fee') return 'অন্যান্য ফি';
+    return ft;
+  };
+
+  const translatePaymentMethod = (pm?: string) => {
+    if (!pm) return '';
+    if (pm === 'Cash') return 'নগদ';
+    if (pm === 'Bank') return 'ব্যাংক';
+    if (pm === 'Mobile Banking') return 'মোবাইল ব্যাংকিং';
+    if (pm === 'Other') return 'অন্যান্য';
+    return pm;
+  };
+
   return (
     <div className="space-y-6">
       <Breadcrumb
-        sectionTitle="Student Fees"
+        sectionTitle="শিক্ষার্থী ফি"
         subItemTitle={currentMeta.title}
         sectionKey="student-fees"
         subItemKey={activeSubItem}
@@ -424,91 +483,110 @@ export const FeesManagerPage: React.FC = () => {
           <p className="text-xs text-slate-500">{t(currentMeta.subtitle)}</p>
         </div>
 
-        {activeSubItem !== 'fee-collection' && (
-          <button
-            onClick={() => setActiveNav('student-fees', 'fee-collection')}
-            className="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-700 px-4 py-2.5 text-xs font-semibold text-white shadow-xs hover:bg-emerald-800 transition-colors"
-          >
-            <CreditCard className="h-4 w-4" />
-            <span>{t('Open Fee Collection Desk')}</span>
-          </button>
-        )}
+        {/* Quick Actions / Navigation */}
+        <div className="flex flex-wrap items-center gap-2">
+          {activeSubItem !== 'fee-collection' ? (
+            <button
+              onClick={() => setActiveNav('student-fees', 'fee-collection')}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-700 px-3.5 py-2 text-xs font-semibold text-white hover:bg-emerald-800 shadow-xs transition-colors cursor-pointer"
+            >
+              <Plus className="h-4 w-4" />
+              <span>নতুন ফি আদায় ডেস্ক</span>
+            </button>
+          ) : (
+            <button
+              onClick={() => setActiveNav('student-fees', 'monthly-fees')}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 shadow-xs transition-colors cursor-pointer"
+            >
+              <Receipt className="h-4 w-4 text-emerald-700" />
+              <span>মাসিক ফি তালিকা দেখুন</span>
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* Summary Stat Cards */}
-      {activeSubItem !== 'fee-collection' && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-xs">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-              {t('Total Billed Fees')}
-            </span>
-            <div className="mt-1 flex items-baseline justify-between">
-              <span className="text-2xl font-bold font-mono text-slate-900 tabular-nums">
-                ৳{viewTotals.totalBilled.toLocaleString()}
-              </span>
-              <span className="text-xs text-slate-500 font-medium">
-                {viewTotals.count} {t('records')}
-              </span>
-            </div>
+      {/* 1. SUMMARY STAT CARDS */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs flex items-center justify-between">
+          <div>
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">মোট বিলকৃত</span>
+            <p className="text-xl font-black text-slate-900 font-mono mt-1">
+              ৳{viewTotals.totalBilled.toLocaleString()}
+            </p>
+            <span className="text-[11px] text-slate-400 mt-0.5 block">{viewTotals.count} টি রেকর্ড</span>
           </div>
-
-          <div className="rounded-xl border border-emerald-200 bg-emerald-50/40 p-4 shadow-xs">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-emerald-800">
-              {t('Total Fee Collected (Paid)')}
-            </span>
-            <div className="mt-1 flex items-baseline justify-between">
-              <span className="text-2xl font-bold font-mono text-emerald-950 tabular-nums">
-                ৳{viewTotals.totalCollected.toLocaleString()}
-              </span>
-              <span className="text-xs text-emerald-700 font-medium">{t('Actual Money In')}</span>
-            </div>
-          </div>
-
-          <div className="rounded-xl border border-amber-200 bg-amber-50/40 p-4 shadow-xs">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-amber-800">
-              {t('Outstanding Dues')}
-            </span>
-            <div className="mt-1 flex items-baseline justify-between">
-              <span className="text-2xl font-bold font-mono text-amber-950 tabular-nums">
-                ৳{viewTotals.totalDue.toLocaleString()}
-              </span>
-              <span className="text-xs text-amber-700 font-medium">{t('To be collected')}</span>
-            </div>
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50 text-blue-700 font-bold">
+            📊
           </div>
         </div>
-      )}
+
+        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs flex items-center justify-between">
+          <div>
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">সংগৃহীত</span>
+            <p className="text-xl font-black text-emerald-700 font-mono mt-1">
+              ৳{viewTotals.totalCollected.toLocaleString()}
+            </p>
+            <span className="text-[11px] text-emerald-600 mt-0.5 block">সফল আদায়</span>
+          </div>
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 font-bold">
+            ✅
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs flex items-center justify-between">
+          <div>
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">বকেয়া পাওনা</span>
+            <p className="text-xl font-black text-rose-700 font-mono mt-1">
+              ৳{viewTotals.totalDue.toLocaleString()}
+            </p>
+            <span className="text-[11px] text-rose-600 mt-0.5 block">অনাদায়ী পরিমাণ</span>
+          </div>
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-rose-50 text-rose-700 font-bold">
+            ⚠️
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs flex items-center justify-between">
+          <div>
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">আদায়ের হার</span>
+            <p className="text-xl font-black text-indigo-700 font-mono mt-1">
+              {viewTotals.totalBilled > 0
+                ? `${Math.round((viewTotals.totalCollected / viewTotals.totalBilled) * 100)}%`
+                : '0%'}
+            </p>
+            <span className="text-[11px] text-indigo-600 mt-0.5 block">কার্যকারিতা</span>
+          </div>
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-50 text-indigo-700 font-bold">
+            📈
+          </div>
+        </div>
+      </div>
 
       {/* 2. FEE COLLECTION DESK FORM */}
       {activeSubItem === 'fee-collection' && (
         <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-xs space-y-6">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-            <div>
-              <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                <Receipt className="h-4 w-4 text-emerald-600" />
-                <span>{t('Fee Collection Form')}</span>
-              </h3>
-              <p className="text-xs text-slate-500 mt-0.5">
-                {t('Collect and record fees directly into Cloud Firestore for existing students')}
-              </p>
-            </div>
-            <span className="rounded-md bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 border border-emerald-200">
-              {t('Status')}: {t(calculatedStatus)}
-            </span>
+          <div className="border-b border-slate-100 pb-3">
+            <h3 className="text-sm font-bold text-slate-900 uppercase flex items-center gap-2">
+              <CreditCard className="h-4 w-4 text-emerald-700" />
+              <span>ফি আদায় ডেস্ক ও রসিদ তৈরি</span>
+            </h3>
+            <p className="text-xs text-slate-500 mt-0.5">
+              শিক্ষার্থীর আইডি বা নাম সিলেক্ট করে তাৎক্ষণিকভাবে ফি রসিদ প্রিন্ট করুন এবং ফায়ারস্টোরে সংরক্ষণ করুন।
+            </p>
           </div>
 
           {formError && (
             <div className="flex items-center gap-2 rounded-lg bg-rose-50 p-3 text-xs text-rose-700 border border-rose-200">
               <AlertCircle className="h-4 w-4 shrink-0 text-rose-600" />
-              <span>{t(formError)}</span>
+              <span>{formError}</span>
             </div>
           )}
 
           <form onSubmit={handleCollectSubmit} className="space-y-5">
-            {/* Student Selection & Auto-populated profile */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
               <div className="lg:col-span-5">
                 <label className="block font-semibold text-slate-700 mb-1 text-xs">
-                  {t('Select Registered Student')} <span className="text-rose-500">*</span>
+                  শিক্ষার্থী নির্বাচন করুন <span className="text-rose-500">*</span>
                 </label>
                 <select
                   required
@@ -516,7 +594,7 @@ export const FeesManagerPage: React.FC = () => {
                   onChange={(e) => setCollectStudentId(e.target.value)}
                   className="w-full rounded-lg border border-slate-200 bg-white p-2.5 text-xs text-slate-900 focus:border-emerald-600 focus:outline-hidden"
                 >
-                  <option value="">-- {t('Choose Student from Directory')} --</option>
+                  <option value="">-- ডিরেক্টরি থেকে শিক্ষার্থী বেছে নিন --</option>
                   {students.map((s) => (
                     <option key={s.id} value={s.id}>
                       {s.name} ({s.id} - {s.className})
@@ -525,7 +603,7 @@ export const FeesManagerPage: React.FC = () => {
                 </select>
                 {students.length === 0 && (
                   <p className="text-[11px] text-amber-600 mt-1">
-                    {t('No students found.')}
+                    কোনো শিক্ষার্থী পাওয়া যায়নি।
                   </p>
                 )}
               </div>
@@ -533,30 +611,30 @@ export const FeesManagerPage: React.FC = () => {
               {/* Automatically Populated Student Info Card */}
               <div className="lg:col-span-7 rounded-lg bg-slate-50 p-3.5 border border-slate-200">
                 <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-2">
-                  {t('Auto-Populated Student Details')}
+                  স্বয়ংক্রিয়ভাবে পূরণকৃত শিক্ষার্থীর বিবরণ
                 </div>
                 {selectedStudent ? (
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
                     <div>
-                      <span className="text-slate-400 block text-[10px]">{t('Student ID')}</span>
+                      <span className="text-slate-400 block text-[10px]">শিক্ষার্থী আইডি</span>
                       <strong className="font-mono text-emerald-800">{selectedStudent.id}</strong>
                     </div>
                     <div>
-                      <span className="text-slate-400 block text-[10px]">{t('Student Name')}</span>
+                      <span className="text-slate-400 block text-[10px]">শিক্ষার্থীর নাম</span>
                       <strong className="text-slate-900 truncate block">{selectedStudent.name}</strong>
                     </div>
                     <div>
-                      <span className="text-slate-400 block text-[10px]">{t('Class')}</span>
+                      <span className="text-slate-400 block text-[10px]">শ্রেণী</span>
                       <strong className="text-slate-800">{selectedStudent.className}</strong>
                     </div>
                     <div>
-                      <span className="text-slate-400 block text-[10px]">{t('Section')}</span>
+                      <span className="text-slate-400 block text-[10px]">সেকশন</span>
                       <strong className="text-slate-800">{selectedStudent.section || 'A'}</strong>
                     </div>
                   </div>
                 ) : (
                   <p className="text-xs text-slate-400 italic">
-                    {t('Select a student on the left to automatically populate details.')}
+                    বিবরণ স্বয়ংক্রিয়ভাবে দেখতে বাম দিক থেকে একজন শিক্ষার্থী নির্বাচন করুন।
                   </p>
                 )}
               </div>
@@ -566,7 +644,7 @@ export const FeesManagerPage: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 text-xs pt-3 border-t border-slate-100">
               <div>
                 <label className="block font-semibold text-slate-700 mb-1">
-                  {t('Fee Type')} <span className="text-rose-500">*</span>
+                  ফি এর ধরণ <span className="text-rose-500">*</span>
                 </label>
                 <select
                   required
@@ -574,9 +652,9 @@ export const FeesManagerPage: React.FC = () => {
                   onChange={(e) => setCollectFeeType(e.target.value as FeeType)}
                   className="w-full rounded-lg border border-slate-200 bg-white p-2.5 text-xs text-slate-900 focus:border-emerald-600 focus:outline-hidden font-medium"
                 >
-                  <option value="Monthly Fee">{t('Monthly Fee')}</option>
-                  <option value="Admission Fee">{t('Admission Fee')}</option>
-                  <option value="Other Fee">{t('Other Fee')}</option>
+                  <option value="Monthly Fee">মাসিক ফি (Monthly Fee)</option>
+                  <option value="Admission Fee">ভর্তি ফি (Admission Fee)</option>
+                  <option value="Other Fee">অন্যান্য ফি (Other Fee)</option>
                 </select>
               </div>
 
@@ -584,7 +662,7 @@ export const FeesManagerPage: React.FC = () => {
               {collectFeeType === 'Monthly Fee' && (
                 <div>
                   <label className="block font-semibold text-slate-700 mb-1">
-                    {t('Fee Month / Period')} <span className="text-rose-500">*</span>
+                    ফি এর মাস / সময়কাল <span className="text-rose-500">*</span>
                   </label>
                   <select
                     value={collectMonth}
@@ -604,7 +682,7 @@ export const FeesManagerPage: React.FC = () => {
               {collectFeeType === 'Other Fee' && (
                 <div>
                   <label className="block font-semibold text-slate-700 mb-1">
-                    {t('Fee Category')} <span className="text-rose-500">*</span>
+                    ফি ক্যাটাগরি <span className="text-rose-500">*</span>
                   </label>
                   <select
                     value={collectCategory}
@@ -613,7 +691,7 @@ export const FeesManagerPage: React.FC = () => {
                   >
                     {OTHER_FEE_CATEGORIES.map((c) => (
                       <option key={c} value={c}>
-                        {t(c)}
+                        {c}
                       </option>
                     ))}
                   </select>
@@ -622,7 +700,7 @@ export const FeesManagerPage: React.FC = () => {
 
               <div>
                 <label className="block font-semibold text-slate-700 mb-1">
-                  {t('Payment Date')} <span className="text-rose-500">*</span>
+                  পেমেন্টের তারিখ <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="date"
@@ -635,7 +713,7 @@ export const FeesManagerPage: React.FC = () => {
 
               <div>
                 <label className="block font-semibold text-slate-700 mb-1">
-                  {t('Payment Method')} <span className="text-rose-500">*</span>
+                  পেমেন্ট মাধ্যম <span className="text-rose-500">*</span>
                 </label>
                 <select
                   required
@@ -643,23 +721,23 @@ export const FeesManagerPage: React.FC = () => {
                   onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
                   className="w-full rounded-lg border border-slate-200 bg-white p-2.5 text-xs text-slate-900 focus:border-emerald-600 focus:outline-hidden"
                 >
-                  <option value="Cash">{t('Cash')}</option>
-                  <option value="Bank">{t('Bank')}</option>
-                  <option value="Mobile Banking">{t('Mobile Banking')}</option>
-                  <option value="Other">{t('Other')}</option>
+                  <option value="Cash">নগদ (Cash)</option>
+                  <option value="Bank">ব্যাংক (Bank)</option>
+                  <option value="Mobile Banking">মোবাইল ব্যাংকিং (Mobile Banking)</option>
+                  <option value="Other">অন্যান্য (Other)</option>
                 </select>
               </div>
 
               <div>
                 <label className="block font-semibold text-slate-700 mb-1">
-                  {t('Total Amount')} (৳) <span className="text-rose-500">*</span>
+                  মোট পরিমাণ (৳) <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="number"
                   required
                   min={1}
                   step="any"
-                  placeholder="Total fee bill"
+                  placeholder="মোট ফি বিল"
                   value={totalAmount}
                   onChange={(e) =>
                     setTotalAmount(e.target.value === '' ? '' : Number(e.target.value))
@@ -670,7 +748,7 @@ export const FeesManagerPage: React.FC = () => {
 
               <div>
                 <label className="block font-semibold text-slate-700 mb-1">
-                  {t('Paid Amount')} (৳) <span className="text-rose-500">*</span>
+                  পরিশোধিত পরিমাণ (৳) <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="number"
@@ -678,7 +756,7 @@ export const FeesManagerPage: React.FC = () => {
                   min={0}
                   max={typeof totalAmount === 'number' ? totalAmount : undefined}
                   step="any"
-                  placeholder="Actual money received"
+                  placeholder="প্রকৃত প্রাপ্ত টাকা"
                   value={paidAmount}
                   onChange={(e) =>
                     setPaidAmount(e.target.value === '' ? '' : Number(e.target.value))
@@ -689,7 +767,7 @@ export const FeesManagerPage: React.FC = () => {
 
               <div>
                 <label className="block font-semibold text-slate-700 mb-1">
-                  {t('Due Amount')} (৳)
+                  বকেয়া পরিমাণ (৳)
                 </label>
                 <input
                   type="text"
@@ -702,11 +780,11 @@ export const FeesManagerPage: React.FC = () => {
 
             <div>
               <label className="block font-semibold text-slate-700 mb-1 text-xs">
-                {t('Transaction Note / Remarks')}
+                লেনদেনের নোট / মন্তব্য
               </label>
               <input
                 type="text"
-                placeholder="e.g. Bank slip #4829 or Cash received by Office Assistant"
+                placeholder="যেমন: ব্যাংক স্লিপ নং বা অফিস সহকারীর নাম"
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
                 className="w-full rounded-lg border border-slate-200 p-2.5 text-xs focus:border-emerald-600 focus:outline-hidden"
@@ -724,7 +802,7 @@ export const FeesManagerPage: React.FC = () => {
                 }}
                 className="rounded-lg border border-slate-200 px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
               >
-                {t('Reset Form')}
+                ফর্ম রিসেট করুন
               </button>
               <button
                 type="submit"
@@ -732,7 +810,7 @@ export const FeesManagerPage: React.FC = () => {
                 className="inline-flex items-center gap-2 rounded-lg bg-emerald-700 px-6 py-2.5 text-xs font-semibold text-white hover:bg-emerald-800 transition-colors shadow-xs disabled:opacity-50"
               >
                 <CheckCircle2 className="h-4 w-4" />
-                <span>{isSubmitting ? t('Saving...') : t('Save & Record Fee')}</span>
+                <span>{isSubmitting ? 'সংরক্ষণ হচ্ছে...' : 'সংরক্ষণ ও ফি রেকর্ড করুন'}</span>
               </button>
             </div>
           </form>
@@ -742,6 +820,27 @@ export const FeesManagerPage: React.FC = () => {
       {/* 3. LIST TABLE FOR MONTHLY, ADMISSION, OTHER, DUE FEES */}
       {activeSubItem !== 'fee-collection' && (
         <div className="space-y-4">
+          {/* Informative Banner for Due Fees */}
+          {activeSubItem === 'due-fees' && (
+            <div className="rounded-xl bg-amber-50 border border-amber-200 p-4 text-xs text-amber-900 flex items-start gap-3">
+              <div className="p-2 bg-amber-100 rounded-lg text-amber-800 shrink-0 mt-0.5">
+                <AlertCircle className="h-5 w-5" />
+              </div>
+              <div className="space-y-1">
+                <h4 className="font-bold text-amber-950 text-sm">বকেয়া ফি আদায় করার নিয়মাবলী:</h4>
+                <p>
+                  ১. কোনো শিক্ষার্থীর বকেয়া ফি আদায় করতে হলে নিচের তালিকা থেকে ঐ শিক্ষার্থীর নামের পাশে থাকা <strong className="text-emerald-800">"বকেয়া আদায়"</strong> (Dollar icon) বাটনে ক্লিক করুন।
+                </p>
+                <p>
+                  ২. পপআপ উইন্ডোতে পরিশোধিত পরিমাণ লিখে নিশ্চিত করলেই বকেয়া টাকা স্বয়ংক্রিয়ভাবে জমা হয়ে যাবে এবং মোট বকেয়া ও স্ট্যাটাস আপডেট হয়ে যাবে।
+                </p>
+                <p>
+                  ৩. এছাড়াও আপনি চাইলে উপরে <strong className="text-emerald-800">"নতুন ফি আদায় ডেস্ক"</strong> থেকে যেকোনো নতুন ফি এন্ট্রি করার সময়ও আংশিক বা পূর্ণ পেমেন্ট নিতে পারেন।
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Filter Bar */}
           <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-xs sm:flex-row sm:items-center sm:justify-between">
             <div className="relative flex-1 max-w-md">
@@ -750,7 +849,7 @@ export const FeesManagerPage: React.FC = () => {
                 type="text"
                 value={localSearch}
                 onChange={(e) => setLocalSearch(e.target.value)}
-                placeholder={t('Search by Student ID, Student Name, Father Name...')}
+                placeholder="শিক্ষার্থী আইডি, নাম বা পিতার নাম দিয়ে খুঁজুন..."
                 className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-xs text-slate-900 placeholder-slate-400 focus:border-emerald-600 focus:bg-white focus:outline-hidden"
               />
             </div>
@@ -758,13 +857,13 @@ export const FeesManagerPage: React.FC = () => {
             <div className="flex flex-wrap items-center gap-2">
               {/* Class Filter */}
               <div className="flex items-center gap-1.5">
-                <span className="text-[11px] font-medium text-slate-500">{t('Class')}:</span>
+                <span className="text-[11px] font-medium text-slate-500">শ্রেণী:</span>
                 <select
                   value={selectedClass}
                   onChange={(e) => setSelectedClass(e.target.value)}
                   className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 focus:outline-hidden focus:border-emerald-600"
                 >
-                  <option value="All">{t('All Classes')}</option>
+                  <option value="All">সকল শ্রেণী</option>
                   {uniqueClasses.map((cls) => (
                     <option key={cls} value={cls}>
                       {cls}
@@ -776,13 +875,13 @@ export const FeesManagerPage: React.FC = () => {
               {/* Month Filter on Monthly Fees */}
               {activeSubItem === 'monthly-fees' && (
                 <div className="flex items-center gap-1.5">
-                  <span className="text-[11px] font-medium text-slate-500">{t('Month')}:</span>
+                  <span className="text-[11px] font-medium text-slate-500">মাস:</span>
                   <select
                     value={selectedMonth}
                     onChange={(e) => setSelectedMonth(e.target.value)}
                     className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 focus:outline-hidden focus:border-emerald-600"
                   >
-                    <option value="All">{t('All Months')}</option>
+                    <option value="All">সকল মাস</option>
                     {MONTH_OPTIONS.map((m) => (
                       <option key={m} value={m}>
                         {m}
@@ -795,16 +894,16 @@ export const FeesManagerPage: React.FC = () => {
               {/* Fee Type Filter on Due Fees */}
               {activeSubItem === 'due-fees' && (
                 <div className="flex items-center gap-1.5">
-                  <span className="text-[11px] font-medium text-slate-500">{t('Fee Type')}:</span>
+                  <span className="text-[11px] font-medium text-slate-500">ফি এর ধরণ:</span>
                   <select
                     value={selectedFeeType}
                     onChange={(e) => setSelectedFeeType(e.target.value)}
                     className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 focus:outline-hidden focus:border-emerald-600"
                   >
-                    <option value="All">{t('All Types')}</option>
-                    <option value="Monthly Fee">{t('Monthly Fee')}</option>
-                    <option value="Admission Fee">{t('Admission Fee')}</option>
-                    <option value="Other Fee">{t('Other Fee')}</option>
+                    <option value="All">সকল ধরণ</option>
+                    <option value="Monthly Fee">মাসিক ফি</option>
+                    <option value="Admission Fee">ভর্তি ফি</option>
+                    <option value="Other Fee">অন্যান্য ফি</option>
                   </select>
                 </div>
               )}
@@ -812,16 +911,16 @@ export const FeesManagerPage: React.FC = () => {
               {/* Status Filter (on monthly, admission, other) */}
               {activeSubItem !== 'due-fees' && (
                 <div className="flex items-center gap-1.5">
-                  <span className="text-[11px] font-medium text-slate-500">{t('Status')}:</span>
+                  <span className="text-[11px] font-medium text-slate-500">স্ট্যাটাস:</span>
                   <select
                     value={selectedStatus}
                     onChange={(e) => setSelectedStatus(e.target.value)}
                     className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 focus:outline-hidden focus:border-emerald-600"
                   >
-                    <option value="All">{t('All Status')}</option>
-                    <option value="Paid">{t('Paid')}</option>
-                    <option value="Partial">{t('Partial')}</option>
-                    <option value="Due">{t('Due')}</option>
+                    <option value="All">সকল স্ট্যাটাস</option>
+                    <option value="Paid">পরিশোধিত</option>
+                    <option value="Partial">আংশিক</option>
+                    <option value="Due">বকেয়া</option>
                   </select>
                 </div>
               )}
@@ -840,10 +939,10 @@ export const FeesManagerPage: React.FC = () => {
                     setSelectedMonth('All');
                   }}
                   className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50"
-                  title={t('Reset')}
+                  title="রিসেট"
                 >
                   <RotateCcw className="h-3 w-3" />
-                  <span>{t('Reset')}</span>
+                  <span>রিসেট</span>
                 </button>
               )}
             </div>
@@ -855,31 +954,31 @@ export const FeesManagerPage: React.FC = () => {
               <table className="w-full text-left text-xs">
                 <thead className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
                   <tr>
-                    <th className="px-5 py-3.5">{t('Student ID')}</th>
-                    <th className="px-5 py-3.5">{t('Student Name')}</th>
-                    <th className="px-5 py-3.5">{t('Class')}</th>
+                    <th className="px-5 py-3.5">শিক্ষার্থী আইডি</th>
+                    <th className="px-5 py-3.5">শিক্ষার্থীর নাম</th>
+                    <th className="px-5 py-3.5">শ্রেণী</th>
 
                     {activeSubItem === 'monthly-fees' && (
-                      <th className="px-5 py-3.5">{t('Fee Month')}</th>
+                      <th className="px-5 py-3.5">ফি এর মাস</th>
                     )}
                     {activeSubItem === 'admission-fees' && (
-                      <th className="px-5 py-3.5">{t('Admission Date')}</th>
+                      <th className="px-5 py-3.5">ভর্তির তারিখ</th>
                     )}
                     {activeSubItem === 'other-fees' && (
-                      <th className="px-5 py-3.5">{t('Fee Category')}</th>
+                      <th className="px-5 py-3.5">ফি ক্যাটাগরি</th>
                     )}
                     {activeSubItem === 'due-fees' && (
-                      <th className="px-5 py-3.5">{t('Fee Type')}</th>
+                      <th className="px-5 py-3.5">ফি এর ধরণ</th>
                     )}
 
-                    <th className="px-5 py-3.5 text-right">{t('Total Amount')}</th>
-                    <th className="px-5 py-3.5 text-right">{t('Paid Amount')}</th>
-                    <th className="px-5 py-3.5 text-right">{t('Due Amount')}</th>
-                    <th className="px-5 py-3.5 text-center">{t('Status')}</th>
+                    <th className="px-5 py-3.5 text-right">মোট পরিমাণ (৳)</th>
+                    <th className="px-5 py-3.5 text-right">পরিশোধিত (৳)</th>
+                    <th className="px-5 py-3.5 text-right">বকেয়া (৳)</th>
+                    <th className="px-5 py-3.5 text-center">স্ট্যাটাস</th>
                     <th className="px-5 py-3.5">
-                      {activeSubItem === 'due-fees' ? t('Last Payment') : t('Payment Date')}
+                      {activeSubItem === 'due-fees' ? 'শেষ পেমেন্ট' : 'পেমেন্টের তারিখ'}
                     </th>
-                    <th className="px-5 py-3.5 text-right">{t('Actions')}</th>
+                    <th className="px-5 py-3.5 text-right">কার্যক্রম</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -905,98 +1004,85 @@ export const FeesManagerPage: React.FC = () => {
                         </td>
 
                         {activeSubItem === 'monthly-fees' && (
-                          <td className="px-5 py-3.5 whitespace-nowrap text-slate-700 font-medium">
-                            {fee.month || 'Monthly'}
+                          <td className="px-5 py-3.5 whitespace-nowrap text-slate-600 font-medium">
+                            {fee.month || '-'}
                           </td>
                         )}
                         {activeSubItem === 'admission-fees' && (
-                          <td className="px-5 py-3.5 whitespace-nowrap text-slate-500 font-mono">
-                            {fee.paymentDate || fee.lastPaymentDate}
+                          <td className="px-5 py-3.5 whitespace-nowrap font-mono text-slate-600">
+                            {fee.lastPaymentDate || '-'}
                           </td>
                         )}
                         {activeSubItem === 'other-fees' && (
-                          <td className="px-5 py-3.5 whitespace-nowrap text-slate-800 font-medium">
+                          <td className="px-5 py-3.5 whitespace-nowrap text-slate-600">
                             {fee.category || fee.feeType}
                           </td>
                         )}
                         {activeSubItem === 'due-fees' && (
-                          <td className="px-5 py-3.5 whitespace-nowrap text-slate-800 font-medium">
-                            {fee.feeType}
+                          <td className="px-5 py-3.5 whitespace-nowrap text-slate-600">
+                            {translateFeeType(fee.feeType)}
                           </td>
                         )}
 
-                        <td className="px-5 py-3.5 whitespace-nowrap text-right font-mono font-medium text-slate-800 tabular-nums">
-                          ৳{fee.totalFee}
+                        <td className="px-5 py-3.5 whitespace-nowrap text-right font-mono font-bold text-slate-900">
+                          ৳{fee.totalFee.toLocaleString()}
                         </td>
-                        <td className="px-5 py-3.5 whitespace-nowrap text-right font-mono font-semibold text-emerald-700 tabular-nums">
-                          ৳{fee.paid}
+                        <td className="px-5 py-3.5 whitespace-nowrap text-right font-mono font-bold text-emerald-700">
+                          ৳{fee.paid.toLocaleString()}
                         </td>
-                        <td className="px-5 py-3.5 whitespace-nowrap text-right font-mono font-semibold text-amber-700 tabular-nums">
-                          ৳{fee.due}
+                        <td className="px-5 py-3.5 whitespace-nowrap text-right font-mono font-bold text-rose-700">
+                          ৳{fee.due.toLocaleString()}
                         </td>
-
                         <td className="px-5 py-3.5 whitespace-nowrap text-center">
                           <span
                             className={`inline-block rounded-md px-2.5 py-0.5 text-[11px] font-semibold border ${getStatusBadge(
                               fee.status
                             )}`}
                           >
-                            {fee.status}
+                            {translateStatus(fee.status)}
                           </span>
                         </td>
-
-                        <td className="px-5 py-3.5 whitespace-nowrap text-slate-500 font-mono">
-                          {fee.paymentDate || fee.lastPaymentDate || '-'}
+                        <td className="px-5 py-3.5 whitespace-nowrap font-mono text-slate-500">
+                          {fee.lastPaymentDate}
                         </td>
-
                         <td className="px-5 py-3.5 whitespace-nowrap text-right">
                           <div className="flex items-center justify-end gap-1.5">
-                            {/* In Due Fees: "Collect Fee" button */}
-                            {activeSubItem === 'due-fees' && (
+                            {fee.due > 0 && (
                               <button
                                 onClick={() => {
-                                  setCollectStudentId(fee.studentId);
-                                  setCollectFeeType(
-                                    (fee.feeType as FeeType) || 'Monthly Fee'
-                                  );
-                                  setTotalAmount(fee.due);
-                                  setPaidAmount(fee.due);
-                                  setActiveNav('student-fees', 'fee-collection');
+                                  setCollectingDueFee(fee);
+                                  setDuePayAmount(fee.due);
+                                  setDueModalError(null);
                                 }}
-                                className="inline-flex items-center gap-1 rounded bg-emerald-50 px-2 py-1 text-[11px] font-semibold text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition-colors"
+                                title="বকেয়া আদায় করুন"
+                                className="inline-flex items-center gap-1 rounded-md bg-amber-100 px-2.5 py-1 text-[11px] font-bold text-amber-900 hover:bg-amber-200 transition-colors shadow-2xs"
                               >
-                                <span>{t('Collect Fee')}</span>
+                                <DollarSign className="h-3.5 w-3.5" />
+                                <span>বকেয়া আদায়</span>
                               </button>
                             )}
-
-                            {/* View Receipt */}
                             <button
                               onClick={() => setViewingReceipt(fee)}
-                              title={t('Print Receipt')}
-                              className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-colors"
-                            >
-                              <Receipt className="h-4 w-4" />
-                            </button>
-
-                            {/* Edit Fee */}
-                            <button
-                              onClick={() => {
-                                setEditFormError(null);
-                                setEditingFee({ ...fee });
-                              }}
-                              title={t('Edit Fee Record')}
+                              title="রসিদ দেখুন ও প্রিন্ট করুন"
                               className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100 hover:text-emerald-700 transition-colors"
                             >
-                              <Edit2 className="h-4 w-4" />
+                              <Receipt className="h-3.5 w-3.5" />
                             </button>
-
-                            {/* Delete Fee */}
+                            <button
+                              onClick={() => {
+                                setEditingFee(fee);
+                              }}
+                              title="সম্পাদনা করুন"
+                              className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100 hover:text-emerald-700 transition-colors"
+                            >
+                              <Edit2 className="h-3.5 w-3.5" />
+                            </button>
                             <button
                               onClick={() => setDeletingFee(fee)}
-                              title={t('Delete Fee Record')}
+                              title="মুছে ফেলুন"
                               className="rounded-md p-1.5 text-slate-500 hover:bg-rose-50 hover:text-rose-700 transition-colors"
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <Trash2 className="h-3.5 w-3.5" />
                             </button>
                           </div>
                         </td>
@@ -1004,20 +1090,12 @@ export const FeesManagerPage: React.FC = () => {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={10} className="py-14 text-center text-slate-400">
-                        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-400 mb-3">
-                          <Receipt className="h-6 w-6" />
+                      <td colSpan={10} className="py-16 text-center text-slate-400">
+                        <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-400 mb-2">
+                          <Receipt className="h-5 w-5" />
                         </div>
-                        <p className="text-sm font-semibold text-slate-700">
-                          {activeSubItem === 'due-fees'
-                            ? t('No outstanding due fees found.')
-                            : t('No fee records found in Firestore.')}
-                        </p>
-                        <p className="text-xs text-slate-500 mt-1">
-                          {activeSubItem === 'due-fees'
-                            ? t('All student accounts are currently settled with zero balance.')
-                            : t('Click "Open Fee Collection Desk" above to record a new fee payment.')}
-                        </p>
+                        <p className="text-xs font-semibold text-slate-600">এই ভিউতে কোনো ফি রেকর্ড পাওয়া যায়নি</p>
+                        <p className="text-[11px] text-slate-400 mt-0.5">নতুন ফি রসিদ তৈরি করতে উপরের "নতুন ফি আদায় ডেস্ক" বোতামে ক্লিক করুন।</p>
                       </td>
                     </tr>
                   )}
@@ -1028,359 +1106,337 @@ export const FeesManagerPage: React.FC = () => {
         </div>
       )}
 
-      {/* 4. EDIT FEE MODAL */}
+      {/* 4. RECEIPT MODAL */}
+      {viewingReceipt && (
+        <Modal
+          isOpen={!!viewingReceipt}
+          onClose={() => setViewingReceipt(null)}
+          title="ফি আদায় রসিদ (Fee Receipt)"
+          subtitle="অফিস কপি ও ছাত্র কপি প্রিন্ট করুন"
+          maxWidth="lg"
+        >
+          <div className="space-y-6 text-xs">
+            {/* Printable Receipt Area */}
+            <div
+              id="printable-receipt"
+              className="rounded-xl border-2 border-dashed border-slate-300 bg-white p-6 shadow-sm space-y-4 print:border-none print:shadow-none print:p-0"
+            >
+              {/* Header */}
+              <div className="text-center border-b border-slate-200 pb-4 space-y-1">
+                <h2 className="text-base font-black text-emerald-900 font-sans">
+                  {madrasaInfo?.name || 'খাইরুল কুরআন মাদ্রাসা অফিস'}
+                </h2>
+                <p className="text-[11px] text-slate-500">
+                  {madrasaInfo?.address || 'মাদ্রাসা ভবন, ঢাকা, বাংলাদেশ'} | ফোন: {madrasaInfo?.phone || '০১৭০০০০০০০০'}
+                </p>
+                <div className="inline-block px-3 py-1 bg-emerald-100 text-emerald-900 font-bold rounded-full text-[11px] mt-1">
+                  OFFICIAL FEE MONEY RECEIPT
+                </div>
+              </div>
+
+              {/* Meta details */}
+              <div className="grid grid-cols-2 gap-4 text-xs pt-2">
+                <div className="space-y-1">
+                  <div>রসিদ নং: <strong className="font-mono">{viewingReceipt.id.slice(0, 10)}</strong></div>
+                  <div>শিক্ষার্থীর নাম: <strong className="text-slate-900">{viewingReceipt.studentName}</strong></div>
+                  <div>শিক্ষার্থী আইডি: <strong className="font-mono text-emerald-800">{viewingReceipt.studentId}</strong></div>
+                  <div>শ্রেণী: <strong>{viewingReceipt.className}</strong> (সেকশন: {viewingReceipt.section || 'A'})</div>
+                </div>
+                <div className="space-y-1 text-right">
+                  <div>তারিখ: <strong className="font-mono">{viewingReceipt.lastPaymentDate}</strong></div>
+                  <div>ফি এর ধরণ: <strong>{translateFeeType(viewingReceipt.feeType)}</strong></div>
+                  {viewingReceipt.month && <div>মাস: <strong>{viewingReceipt.month}</strong></div>}
+                  {viewingReceipt.category && <div>ক্যাটাগরি: <strong>{viewingReceipt.category}</strong></div>}
+                  <div>পেমেন্ট মাধ্যম: <strong>{translatePaymentMethod(viewingReceipt.paymentMethod)}</strong></div>
+                </div>
+              </div>
+
+              {/* Table breakdown */}
+              <div className="pt-3">
+                <table className="w-full border-collapse border border-slate-300 text-xs text-left">
+                  <thead className="bg-slate-100 font-semibold">
+                    <tr>
+                      <th className="border border-slate-300 px-3 py-2">বিবরণ</th>
+                      <th className="border border-slate-300 px-3 py-2 text-right">পরিমাণ (৳)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td className="border border-slate-300 px-3 py-2">
+                        {translateFeeType(viewingReceipt.feeType)} {viewingReceipt.month ? `- ${viewingReceipt.month}` : ''}
+                      </td>
+                      <td className="border border-slate-300 px-3 py-2 text-right font-mono">
+                        ৳{viewingReceipt.totalFee.toLocaleString()}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="border border-slate-300 px-3 py-2 font-semibold">পরিশোধিত টাকা:</td>
+                      <td className="border border-slate-300 px-3 py-2 text-right font-mono font-bold text-emerald-800">
+                        ৳{viewingReceipt.paid.toLocaleString()}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="border border-slate-300 px-3 py-2 font-semibold">বকেয়া টাকা:</td>
+                      <td className="border border-slate-300 px-3 py-2 text-right font-mono font-bold text-rose-700">
+                        ৳{viewingReceipt.due.toLocaleString()}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              {viewingReceipt.note && (
+                <div className="text-[11px] text-slate-600 bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+                  <strong>নোট:</strong> {viewingReceipt.note}
+                </div>
+              )}
+
+              {/* Signatures */}
+              <div className="grid grid-cols-2 gap-8 pt-12 text-center text-xs">
+                <div className="border-t border-slate-400 pt-1">ছাত্র / অভিভাবকের স্বাক্ষর</div>
+                <div className="border-t border-slate-400 pt-1">হিসাবরক্ষক / ক্যাশিয়ার</div>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setViewingReceipt(null)}
+                className="rounded-lg border border-slate-200 px-4 py-2 font-semibold text-slate-700 hover:bg-slate-50"
+              >
+                বন্ধ করুন
+              </button>
+              <button
+                type="button"
+                onClick={() => window.print()}
+                className="inline-flex items-center gap-2 rounded-lg bg-emerald-700 px-5 py-2 font-semibold text-white hover:bg-emerald-800 shadow-xs"
+              >
+                <Printer className="h-4 w-4" />
+                <span>রসিদ প্রিন্ট করুন</span>
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* 5. EDIT FEE MODAL */}
       {editingFee && (
         <Modal
           isOpen={!!editingFee}
           onClose={() => setEditingFee(null)}
-          title={t('Edit Fee Transaction')}
-          subtitle={`${t('Receipt')} #${editingFee.id}`}
-          maxWidth="md"
+          title="ফি রেকর্ড সম্পাদনা"
+          subtitle="ফি বিল এবং পরিশোধিত টাকার পরিমাণ সংশোধন করুন"
+          maxWidth="sm"
         >
-          <form onSubmit={handleSaveEditFee} className="space-y-4">
+          <form onSubmit={handleSaveEditFee} className="space-y-4 text-xs">
             {editFormError && (
               <div className="flex items-center gap-2 rounded-lg bg-rose-50 p-3 text-xs text-rose-700 border border-rose-200">
                 <AlertCircle className="h-4 w-4 shrink-0 text-rose-600" />
-                <span>{t(editFormError)}</span>
+                <span>{editFormError}</span>
               </div>
             )}
 
-            <div className="rounded-lg bg-slate-50 p-3 text-xs border border-slate-200 space-y-1">
-              <p className="text-slate-500">
-                {t('Student')}:{' '}
-                <strong className="text-slate-900">{editingFee.studentName}</strong> (
-                <span className="font-mono text-emerald-800">{editingFee.studentId}</span>)
-              </p>
-              <p className="text-slate-500">
-                {t('Class')}: <strong className="text-slate-800">{editingFee.className}</strong>
-              </p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 text-xs">
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">{t('Fee Type')}</label>
-                <select
-                  value={editingFee.feeType}
-                  onChange={(e) => setEditingFee({ ...editingFee, feeType: e.target.value })}
-                  className="w-full rounded-lg border border-slate-200 bg-white p-2 text-xs focus:border-emerald-600 focus:outline-hidden font-medium"
-                >
-                  <option value="Monthly Fee">{t('Monthly Fee')}</option>
-                  <option value="Admission Fee">{t('Admission Fee')}</option>
-                  <option value="Other Fee">{t('Other Fee')}</option>
-                </select>
-              </div>
-
-              {editingFee.feeType === 'Monthly Fee' ? (
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">{t('Fee Month')}</label>
-                  <select
-                    value={editingFee.month || 'October 2026'}
-                    onChange={(e) => setEditingFee({ ...editingFee, month: e.target.value })}
-                    className="w-full rounded-lg border border-slate-200 bg-white p-2 text-xs focus:border-emerald-600 focus:outline-hidden"
-                  >
-                    {MONTH_OPTIONS.map((m) => (
-                      <option key={m} value={m}>
-                        {m}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              ) : (
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">{t('Fee Category')}</label>
-                  <input
-                    type="text"
-                    value={editingFee.category || ''}
-                    onChange={(e) => setEditingFee({ ...editingFee, category: e.target.value })}
-                    className="w-full rounded-lg border border-slate-200 p-2 text-xs focus:border-emerald-600 focus:outline-hidden"
-                  />
-                </div>
-              )}
-
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">{t('Total Amount')} (৳)</label>
-                <input
-                  type="number"
-                  min={1}
-                  required
-                  value={editingFee.totalFee}
-                  onChange={(e) =>
-                    setEditingFee({
-                      ...editingFee,
-                      totalFee: Number(e.target.value),
-                      due: Math.max(0, Number(e.target.value) - editingFee.paid),
-                    })
-                  }
-                  className="w-full rounded-lg border border-slate-200 p-2 text-xs focus:border-emerald-600 focus:outline-hidden font-mono"
-                />
-              </div>
-
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">{t('Paid Amount')} (৳)</label>
-                <input
-                  type="number"
-                  min={0}
-                  max={editingFee.totalFee}
-                  required
-                  value={editingFee.paid}
-                  onChange={(e) =>
-                    setEditingFee({
-                      ...editingFee,
-                      paid: Number(e.target.value),
-                      due: Math.max(0, editingFee.totalFee - Number(e.target.value)),
-                    })
-                  }
-                  className="w-full rounded-lg border border-slate-200 p-2 text-xs focus:border-emerald-600 focus:outline-hidden font-mono text-emerald-800"
-                />
-              </div>
-
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">{t('Payment Date')}</label>
-                <input
-                  type="date"
-                  required
-                  value={editingFee.lastPaymentDate}
-                  onChange={(e) =>
-                    setEditingFee({ ...editingFee, lastPaymentDate: e.target.value })
-                  }
-                  className="w-full rounded-lg border border-slate-200 p-2 text-xs focus:border-emerald-600 focus:outline-hidden font-mono"
-                />
-              </div>
-
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">{t('Payment Method')}</label>
-                <select
-                  value={editingFee.paymentMethod || 'Cash'}
-                  onChange={(e) =>
-                    setEditingFee({ ...editingFee, paymentMethod: e.target.value })
-                  }
-                  className="w-full rounded-lg border border-slate-200 bg-white p-2 text-xs focus:border-emerald-600 focus:outline-hidden"
-                >
-                  <option value="Cash">{t('Cash')}</option>
-                  <option value="Bank">{t('Bank')}</option>
-                  <option value="Mobile Banking">{t('Mobile Banking')}</option>
-                  <option value="Other">{t('Other')}</option>
-                </select>
-              </div>
+            <div className="rounded-lg bg-slate-50 p-3 border border-slate-100 space-y-1">
+              <div>ছাত্র: <strong className="text-slate-900">{editingFee.studentName}</strong> ({editingFee.studentId})</div>
+              <div>ফি এর ধরণ: <strong>{translateFeeType(editingFee.feeType)}</strong></div>
             </div>
 
             <div>
-              <label className="block font-semibold text-slate-700 mb-1 text-xs">{t('Transaction Note / Remarks')}</label>
+              <label className="block font-semibold text-slate-700 mb-1">মোট বিলকৃত টাকা (৳) *</label>
+              <input
+                type="number"
+                required
+                min={1}
+                value={editingFee.totalFee}
+                onChange={(e) => {
+                  const val = e.target.value === '' ? 0 : Number(e.target.value);
+                  setEditingFee({
+                    ...editingFee,
+                    totalFee: val,
+                    due: Math.max(0, val - editingFee.paid),
+                    status: editingFee.paid >= val ? 'Paid' : editingFee.paid > 0 ? 'Partial' : 'Due',
+                  });
+                }}
+                className="w-full rounded-lg border border-slate-200 p-2 font-mono font-bold focus:outline-hidden"
+              />
+            </div>
+
+            <div>
+              <label className="block font-semibold text-slate-700 mb-1">পরিশোধিত টাকা (৳) *</label>
+              <input
+                type="number"
+                required
+                min={0}
+                max={editingFee.totalFee}
+                value={editingFee.paid}
+                onChange={(e) => {
+                  const val = e.target.value === '' ? 0 : Number(e.target.value);
+                  setEditingFee({
+                    ...editingFee,
+                    paid: val,
+                    due: Math.max(0, editingFee.totalFee - val),
+                    status: val >= editingFee.totalFee ? 'Paid' : val > 0 ? 'Partial' : 'Due',
+                  });
+                }}
+                className="w-full rounded-lg border border-slate-200 p-2 font-mono font-bold text-emerald-800 focus:outline-hidden"
+              />
+            </div>
+
+            <div>
+              <label className="block font-semibold text-slate-700 mb-1">নোট / মন্তব্য</label>
               <input
                 type="text"
                 value={editingFee.note || ''}
                 onChange={(e) => setEditingFee({ ...editingFee, note: e.target.value })}
-                className="w-full rounded-lg border border-slate-200 p-2 text-xs focus:border-emerald-600 focus:outline-hidden"
+                className="w-full rounded-lg border border-slate-200 p-2 focus:outline-hidden"
               />
-            </div>
-
-            <div className="rounded-lg bg-amber-50 p-2.5 text-xs text-amber-900 border border-amber-200 flex justify-between items-center font-medium">
-              <span>{t('Due Amount')}: ৳{Math.max(0, editingFee.totalFee - editingFee.paid)}</span>
-              <span>
-                {t('Status')}:{' '}
-                {editingFee.paid >= editingFee.totalFee
-                  ? t('Paid')
-                  : editingFee.paid > 0
-                  ? t('Partial')
-                  : t('Due')}
-              </span>
             </div>
 
             <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
               <button
                 type="button"
                 onClick={() => setEditingFee(null)}
-                className="rounded-lg border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                className="rounded-lg border border-slate-200 px-4 py-2 font-semibold text-slate-700 hover:bg-slate-50"
               >
-                {t('Cancel')}
+                বাতিল
               </button>
               <button
                 type="submit"
                 disabled={isUpdating}
-                className="rounded-lg bg-emerald-700 px-5 py-2 text-xs font-semibold text-white hover:bg-emerald-800 disabled:opacity-50 transition-colors"
+                className="rounded-lg bg-emerald-700 px-5 py-2 font-semibold text-white hover:bg-emerald-800 disabled:opacity-50"
               >
-                {isUpdating ? t('Saving...') : t('Save Changes')}
+                {isUpdating ? 'সংরক্ষণ হচ্ছে...' : 'পরিবর্তন সংরক্ষণ করুন'}
               </button>
             </div>
           </form>
         </Modal>
       )}
 
-      {/* 5. DELETE FEE CONFIRMATION MODAL */}
+      {/* 6. DELETE CONFIRMATION MODAL */}
       {deletingFee && (
         <Modal
           isOpen={!!deletingFee}
           onClose={() => setDeletingFee(null)}
-          title={t('Delete Fee Transaction')}
-          subtitle={t('Confirm deletion from Google Cloud Firestore')}
-          isDestructive={true}
-          maxWidth="md"
-          footer={
-            <>
-              <button
-                onClick={() => setDeletingFee(null)}
-                disabled={isDeleting}
-                className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-              >
-                {t('Cancel')}
-              </button>
-              <button
-                onClick={handleConfirmDelete}
-                disabled={isDeleting}
-                className="rounded-lg bg-rose-600 px-4 py-2 text-xs font-semibold text-white hover:bg-rose-700 disabled:opacity-50 transition-colors"
-              >
-                {isDeleting ? t('Deleting...') : t('Confirm Delete')}
-              </button>
-            </>
-          }
+          title="ফি রেকর্ড মুছে ফেলুন"
+          subtitle="আপনি কি নিশ্চিতভাবে এই ফি রেকর্ডটি মুছে ফেলতে চান?"
+          maxWidth="sm"
         >
-          <div className="text-xs text-slate-600 space-y-3">
-            <p className="text-slate-800">
-              {t('Are you sure you want to delete this fee transaction?')}
-            </p>
-            <div className="rounded-lg bg-slate-50 p-3 border border-slate-200 space-y-1.5 text-xs">
-              <div className="flex justify-between">
-                <span className="text-slate-500">{t('Student Name')}:</span>
-                <strong className="text-slate-900">{deletingFee.studentName}</strong>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500">{t('Fee Type')}:</span>
-                <strong className="text-slate-900">{t(deletingFee.feeType)}</strong>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500">{t('Total Amount')}:</span>
-                <strong className="font-mono text-slate-900">৳{deletingFee.totalFee}</strong>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500">{t('Receipt')} #{deletingFee.id}</span>
+          <div className="space-y-4 text-xs">
+            <div className="flex items-start gap-3 rounded-lg bg-rose-50 p-3.5 text-rose-800 border border-rose-200">
+              <AlertCircle className="h-5 w-5 text-rose-600 shrink-0 mt-0.5" />
+              <div>
+                <span className="font-bold block">স্থায়ীভাবে মুছে ফেলা</span>
+                এই রেকর্ডটি মুছে ফেললে তা ডাটাবেস থেকে স্থায়ীভাবে মুছে যাবে এবং মোট সংগৃহীত হিসাব আপডেট হবে।
               </div>
             </div>
-            <p className="text-rose-600 text-[11px]">
-              {t('This document will be deleted from the Firestore collection')} <code className="font-mono">studentFees/{deletingFee.id}</code>. {t('This action cannot be undone.')}
-            </p>
+
+            <div className="rounded-lg bg-slate-50 p-3 border border-slate-100 space-y-1">
+              <div>ছাত্র: <strong className="text-slate-900">{deletingFee.studentName}</strong></div>
+              <div>ফি এর ধরণ: <strong>{translateFeeType(deletingFee.feeType)}</strong></div>
+              <div>পরিমাণ: <strong className="font-mono text-emerald-800">৳{deletingFee.paid.toLocaleString()}</strong></div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setDeletingFee(null)}
+                className="rounded-lg border border-slate-200 px-4 py-2 font-semibold text-slate-700 hover:bg-slate-50"
+              >
+                বাতিল
+              </button>
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={handleConfirmDelete}
+                className="rounded-lg bg-rose-600 px-4 py-2 font-semibold text-white hover:bg-rose-700 disabled:opacity-50"
+              >
+                {isDeleting ? 'মুছে ফেলা হচ্ছে...' : 'হ্যাঁ, মুছে ফেলুন'}
+              </button>
+            </div>
           </div>
         </Modal>
       )}
 
-      {/* 6. RECEIPT INVOICE MODAL */}
-      {viewingReceipt && (
+      {/* 7. DUE COLLECTION MODAL */}
+      {collectingDueFee && (
         <Modal
-          isOpen={!!viewingReceipt}
-          onClose={() => setViewingReceipt(null)}
-          title={t('Official Student Fee Receipt')}
-          subtitle={`${t('Voucher')} #${viewingReceipt.id}`}
+          isOpen={!!collectingDueFee}
+          onClose={() => setCollectingDueFee(null)}
+          title="বকেয়া ফি আদায় করুন (Collect Due)"
+          subtitle="শিক্ষার্থীর বকেয়া ফি জমা নিন এবং হিসাব আপডেট করুন"
           maxWidth="md"
-          footer={
-            <div className="flex items-center justify-between w-full">
-              <button
-                type="button"
-                onClick={() => window.print()}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-              >
-                <Printer className="h-3.5 w-3.5" />
-                <span>{t('Print Receipt')}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setViewingReceipt(null)}
-                className="rounded-lg bg-slate-900 px-4 py-2 text-xs font-semibold text-white hover:bg-slate-800"
-              >
-                {t('Close')}
-              </button>
-            </div>
-          }
         >
-          <div className="space-y-4 p-2 text-xs">
-            {/* Madrasa Letterhead Header */}
-            <div className="text-center border-b border-slate-200 pb-3">
-              <h3 className="font-bold text-base text-slate-900 tracking-tight">
-                {madrasaInfo.name || t('Madrasa Office')}
-              </h3>
-              <p className="text-[11px] text-slate-500">{madrasaInfo.address || t('Office Management')}</p>
-              <span className="inline-block mt-1 font-mono text-[10px] text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                {t('Receipt')} #{viewingReceipt.id}
-              </span>
-            </div>
+          <form onSubmit={handleDueCollectionSubmit} className="space-y-4 text-xs">
+            {dueModalError && (
+              <div className="flex items-center gap-2 rounded-lg bg-rose-50 p-3 text-xs text-rose-700 border border-rose-200">
+                <AlertCircle className="h-4 w-4 shrink-0 text-rose-600" />
+                <span>{dueModalError}</span>
+              </div>
+            )}
 
-            {/* Receipt Summary Grid */}
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              <div className="rounded bg-slate-50 p-2">
-                <span className="text-slate-400 block text-[10px]">{t('Student Name')}</span>
-                <strong className="text-slate-900 font-semibold">{viewingReceipt.studentName}</strong>
+            <div className="rounded-xl bg-slate-50 p-3.5 border border-slate-200 space-y-1.5">
+              <div className="flex justify-between">
+                <span className="text-slate-500">শিক্ষার্থী:</span>
+                <strong className="text-slate-900">{collectingDueFee.studentName} ({collectingDueFee.studentId})</strong>
               </div>
-              <div className="rounded bg-slate-50 p-2">
-                <span className="text-slate-400 block text-[10px]">{t('Student ID')}</span>
-                <strong className="font-mono text-emerald-800">{viewingReceipt.studentId}</strong>
+              <div className="flex justify-between">
+                <span className="text-slate-500">ফি এর ধরণ:</span>
+                <strong className="text-slate-900">{translateFeeType(collectingDueFee.feeType)} {collectingDueFee.month ? `(${collectingDueFee.month})` : ''}</strong>
               </div>
-              <div className="rounded bg-slate-50 p-2">
-                <span className="text-slate-400 block text-[10px]">{t('Class & Section')}</span>
-                <strong className="text-slate-800">
-                  {viewingReceipt.className} ({t('Section')} {viewingReceipt.section || 'A'})
-                </strong>
+              <div className="flex justify-between">
+                <span className="text-slate-500">মোট ফি বিল:</span>
+                <span className="font-mono font-bold text-slate-800">৳{collectingDueFee.totalFee.toLocaleString()}</span>
               </div>
-              <div className="rounded bg-slate-50 p-2">
-                <span className="text-slate-400 block text-[10px]">{t('Payment Date')}</span>
-                <strong className="font-mono text-slate-800">
-                  {viewingReceipt.paymentDate || viewingReceipt.lastPaymentDate}
-                </strong>
+              <div className="flex justify-between">
+                <span className="text-slate-500">পূর্বে পরিশোধিত:</span>
+                <span className="font-mono font-bold text-emerald-700">৳{collectingDueFee.paid.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between border-t border-slate-200 pt-1.5">
+                <span className="text-slate-700 font-semibold">বর্তমান বকেয়া:</span>
+                <span className="font-mono font-black text-rose-700 text-sm">৳{collectingDueFee.due.toLocaleString()}</span>
               </div>
             </div>
 
-            {/* Breakdown Table */}
-            <div className="rounded-lg border border-slate-200 overflow-hidden">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
-                  <tr>
-                    <th className="py-2 px-3">{t('Description')}</th>
-                    <th className="py-2 px-3 text-right">{t('Amount')}</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  <tr>
-                    <td className="py-2.5 px-3">
-                      <p className="font-semibold text-slate-900">{t(viewingReceipt.feeType)}</p>
-                      {viewingReceipt.month && (
-                        <p className="text-[11px] text-slate-500">{t('Month')}: {viewingReceipt.month}</p>
-                      )}
-                      {viewingReceipt.category && (
-                        <p className="text-[11px] text-slate-500">{t('Category')}: {t(viewingReceipt.category)}</p>
-                      )}
-                    </td>
-                    <td className="py-2.5 px-3 text-right font-mono font-bold text-slate-900 tabular-nums">
-                      ৳{viewingReceipt.totalFee}
-                    </td>
-                  </tr>
-                </tbody>
-                <tfoot className="bg-slate-50/70 border-t border-slate-200 font-medium">
-                  <tr>
-                    <td className="py-1.5 px-3 text-slate-600">{t('Total Billed')}:</td>
-                    <td className="py-1.5 px-3 text-right font-mono tabular-nums">
-                      ৳{viewingReceipt.totalFee}
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="py-1.5 px-3 text-emerald-800 font-semibold">{t('Amount Paid')}:</td>
-                    <td className="py-1.5 px-3 text-right font-mono font-bold text-emerald-800 tabular-nums">
-                      ৳{viewingReceipt.paid}
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="py-1.5 px-3 text-amber-800 font-semibold">{t('Remaining Due')}:</td>
-                    <td className="py-1.5 px-3 text-right font-mono font-bold text-amber-800 tabular-nums">
-                      ৳{viewingReceipt.due}
-                    </td>
-                  </tr>
-                </tfoot>
-              </table>
+            <div>
+              <label className="block font-semibold text-slate-700 mb-1">
+                এবার কত টাকা আদায় করছেন? (৳) <span className="text-rose-500">*</span>
+              </label>
+              <input
+                type="number"
+                required
+                min={1}
+                max={collectingDueFee.due}
+                step="any"
+                value={duePayAmount}
+                onChange={(e) =>
+                  setDuePayAmount(e.target.value === '' ? '' : Number(e.target.value))
+                }
+                className="w-full rounded-lg border border-slate-200 bg-white p-2.5 text-sm font-mono font-bold text-emerald-800 focus:border-emerald-600 focus:outline-hidden"
+              />
+              <p className="text-[11px] text-slate-500 mt-1">
+                সর্বোচ্চ বকেয়া পরিমাণ: <strong className="font-mono">৳{collectingDueFee.due.toLocaleString()}</strong>
+              </p>
             </div>
 
-            <div className="flex items-center justify-between text-[11px] text-slate-500 pt-2 border-t border-slate-100">
-              <span>{t('Payment Method')}: {t(viewingReceipt.paymentMethod || 'Cash')}</span>
-              <span className={`px-2 py-0.5 rounded font-semibold border ${getStatusBadge(viewingReceipt.status)}`}>
-                {t('Status')}: {t(viewingReceipt.status)}
-              </span>
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setCollectingDueFee(null)}
+                className="rounded-lg border border-slate-200 px-4 py-2 font-semibold text-slate-700 hover:bg-slate-50"
+              >
+                বাতিল
+              </button>
+              <button
+                type="submit"
+                disabled={isCollectingDue}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-700 px-5 py-2 font-semibold text-white hover:bg-emerald-800 disabled:opacity-50"
+              >
+                <DollarSign className="h-4 w-4" />
+                <span>{isCollectingDue ? 'আদায় হচ্ছে...' : 'বকেয়া আদায় নিশ্চিত করুন'}</span>
+              </button>
             </div>
-          </div>
+          </form>
         </Modal>
       )}
     </div>

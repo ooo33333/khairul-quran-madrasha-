@@ -22,12 +22,17 @@ import {
   Globe,
   Image,
   FileText,
+  Download,
+  Database,
+  FileSpreadsheet,
+  FileCode,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { useAuth } from '../../context/AuthContext';
 import { SubNavigationItem, UserAccount, AcademicClass, AcademicYear, AccountCategory } from '../../types';
 import { Breadcrumb } from '../../components/common/Breadcrumb';
 import { Modal } from '../../components/common/Modal';
+import { compressImage } from '../../lib/firestoreService';
 
 export const SettingsPage: React.FC = () => {
   const { logout: authLogout, adminProfile } = useAuth();
@@ -61,6 +66,12 @@ export const SettingsPage: React.FC = () => {
     isRefreshing,
     systemRestart,
     isRestarting,
+    students,
+    fees,
+    transactions,
+    boardingStudents,
+    boardingTransactions,
+    teachers,
     addNotification,
     t,
   } = useApp();
@@ -118,22 +129,14 @@ export const SettingsPage: React.FC = () => {
     setInfoForm(madrasaInfo);
   }, [madrasaInfo]);
 
-  // Academic year state
-  const [academicSession, setAcademicSession] = useState({
-    hijriYear: '1447–1448 AH',
-    solarYear: '2026–2027',
-    termStatus: 'Mid-Year Term 1 (Active)',
-    examDate: 'December 15, 2026',
-    vacationDate: 'Shawwal Eid Recess (March 2027)',
-  });
-
   const handleInfoSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (adminProfile?.role === 'staff') {
-      addNotification('error', 'Access Denied', 'Staff users cannot modify institutional settings.');
+      addNotification('error', 'অ্যাক্সেস অস্বীকৃত', 'স্টাফ ব্যবহারকারীরা প্রাতিষ্ঠানিক সেটিংস পরিবর্তন করতে পারবেন না।');
       return;
     }
     updateMadrasaInfo(infoForm);
+    addNotification('success', 'সংরক্ষিত', 'মাদ্রাসা তথ্য সফলভাবে আপডেট করা হয়েছে।');
   };
 
   const handleCreateUser = (e: React.FormEvent) => {
@@ -143,11 +146,12 @@ export const SettingsPage: React.FC = () => {
       email: newUserEmail,
       role: newUserRole,
       status: 'Active',
-      lastActive: 'Just now',
+      lastActive: 'এইমাত্র',
     });
     setIsAddUserModalOpen(false);
     setNewUserName('');
     setNewUserEmail('');
+    addNotification('success', 'সফল', 'নতুন ব্যবহারকারী অ্যাকাউন্ট যোগ করা হয়েছে।');
   };
 
   const handleEditUserSubmit = (e: React.FormEvent) => {
@@ -161,6 +165,7 @@ export const SettingsPage: React.FC = () => {
     });
     setIsEditUserModalOpen(false);
     setEditingUser(null);
+    addNotification('success', 'আপডেট সফল', 'ব্যবহারকারী অ্যাকাউন্ট আপডেট করা হয়েছে।');
   };
 
   const handleCreateAy = (e: React.FormEvent) => {
@@ -169,6 +174,7 @@ export const SettingsPage: React.FC = () => {
     addAcademicYear(newAyYear.trim());
     setIsAddAyModalOpen(false);
     setNewAyYear('');
+    addNotification('success', 'সফল', 'নতুন শিক্ষাবর্ষ যোগ করা হয়েছে।');
   };
 
   const handleCreateClass = (e: React.FormEvent) => {
@@ -176,7 +182,7 @@ export const SettingsPage: React.FC = () => {
     if (!classFormName.trim()) return;
     addClass({
       name: classFormName.trim(),
-      classTeacher: classFormTeacher.trim() || 'Unassigned',
+      classTeacher: classFormTeacher.trim() || 'নির্ধারিত নয়',
       monthlyFee: Number(classFormFee) || 0,
       sections: classFormSections.split(',').map(s => s.trim()).filter(Boolean),
     });
@@ -185,6 +191,7 @@ export const SettingsPage: React.FC = () => {
     setClassFormTeacher('');
     setClassFormFee(50);
     setClassFormSections('A, B');
+    addNotification('success', 'সফল', 'নতুন শ্রেণী যোগ করা হয়েছে।');
   };
 
   const handleUpdateClassSubmit = (e: React.FormEvent) => {
@@ -198,6 +205,7 @@ export const SettingsPage: React.FC = () => {
     });
     setIsEditClassModalOpen(false);
     setEditingClass(null);
+    addNotification('success', 'সফল', 'শ্রেণীর তথ্য আপডেট করা হয়েছে।');
   };
 
   const handleCreateCat = (e: React.FormEvent) => {
@@ -214,6 +222,7 @@ export const SettingsPage: React.FC = () => {
     setCatFormDesc('');
     setCatFormType('income');
     setCatFormStatus('Active');
+    addNotification('success', 'সফল', 'হিসাব ক্যাটাগরি যোগ করা হয়েছে।');
   };
 
   const handleUpdateCatSubmit = (e: React.FormEvent) => {
@@ -227,6 +236,7 @@ export const SettingsPage: React.FC = () => {
     });
     setIsEditCatModalOpen(false);
     setEditingCat(null);
+    addNotification('success', 'সফল', 'হিসাব ক্যাটাগরি আপডেট করা হয়েছে।');
   };
 
   const openEditUser = (user: UserAccount) => {
@@ -258,16 +268,17 @@ export const SettingsPage: React.FC = () => {
 
   const handleConfirmReset = () => {
     if (adminProfile?.role !== 'admin') {
-      addNotification('error', 'Access Denied', 'Only administrators can reset website data.');
+      addNotification('error', 'অ্যাক্সেস অস্বীকৃত', 'শুধুমাত্র অ্যাডমিন ওয়েবসাইট ডাটা রিসেট করতে পারবেন।');
       return;
     }
     resetWebsiteData();
     setIsResetModalOpen(false);
+    addNotification('success', 'রিসেট সম্পন্ন', 'ওয়েবসাইট ডাটা সফলভাবে রিসেট করা হয়েছে।');
   };
 
   const handleConfirmRestart = async () => {
     if (adminProfile?.role !== 'admin') {
-      addNotification('error', 'Access Denied', 'Only administrators can reboot the system.');
+      addNotification('error', 'অ্যাক্সেস অস্বীকৃত', 'শুধুমাত্র অ্যাডমিন সিস্টেম রিস্টার্ট করতে পারবেন।');
       return;
     }
     setIsRestartModalOpen(false);
@@ -278,22 +289,117 @@ export const SettingsPage: React.FC = () => {
     setIsLogoutModalOpen(false);
     try {
       await authLogout();
-      addNotification('info', 'Logged Out', 'Administrative session locked.');
+      addNotification('info', 'লগআউট', 'অ্যাডমিনিস্ট্রেটিভ সেশন লক করা হয়েছে।');
     } catch {
       // fallback
     }
   };
 
+  // --- DATA BACKUP & EXPORT FUNCTIONS ---
+  const downloadFile = (content: string, filename: string, contentType: string) => {
+    const blob = new Blob([content], { type: contentType });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const exportStudentsJSON = () => {
+    const dataStr = JSON.stringify(students, null, 2);
+    downloadFile(dataStr, `madrasa_students_backup_${new Date().toISOString().split('T')[0]}.json`, 'application/json');
+    addNotification('success', 'এক্সপোর্ট সফল', 'শিক্ষার্থী ডাটা JSON ফাইল হিসেবে ডাউনলোড হয়েছে।');
+  };
+
+  const exportStudentsCSV = () => {
+    if (students.length === 0) {
+      addNotification('error', 'খালি ডাটা', 'কোনো শিক্ষার্থী ডাটা পাওয়া যায়নি।');
+      return;
+    }
+    const headers = ['ID', 'Name', 'Class', 'Section', 'Father Name', 'Phone', 'Address'];
+    const rows = students.map((s) => [
+      s.id,
+      `"${s.name || ''}"`,
+      `"${s.className || ''}"`,
+      `"${s.section || ''}"`,
+      `"${s.fatherName || ''}"`,
+      `"${s.phone || ''}"`,
+      `"${s.address || ''}"`,
+    ]);
+    const csvContent = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+    downloadFile(csvContent, `madrasa_students_${new Date().toISOString().split('T')[0]}.csv`, 'text/csv;charset=utf-8;');
+    addNotification('success', 'এক্সপোর্ট সফল', 'শিক্ষার্থী তালিকা CSV ফাইল হিসেবে ডাউনলোড হয়েছে।');
+  };
+
+  const exportFinancialJSON = () => {
+    const financialData = {
+      fees,
+      transactions,
+      boardingTransactions,
+      exportedAt: new Date().toISOString(),
+    };
+    const dataStr = JSON.stringify(financialData, null, 2);
+    downloadFile(dataStr, `madrasa_financial_records_${new Date().toISOString().split('T')[0]}.json`, 'application/json');
+    addNotification('success', 'এক্সপোর্ট সফল', 'আর্থিক হিসাব JSON ফাইল হিসেবে ডাউনলোড হয়েছে।');
+  };
+
+  const exportFinancialCSV = () => {
+    const combined = [
+      ...fees.map((f) => ({ Date: f.lastPaymentDate, Type: 'Fee: ' + f.feeType, Category: f.feeType, Description: f.studentName + ' (' + f.studentId + ')', Amount: f.paid, Method: f.paymentMethod })),
+      ...transactions.map((tx) => ({ Date: tx.date, Type: tx.type, Category: tx.category, Description: tx.description, Amount: tx.amount, Method: tx.paymentMethod })),
+    ];
+    if (combined.length === 0) {
+      addNotification('error', 'খালি ডাটা', 'কোনো আর্থিক লেনদেন পাওয়া যায়নি।');
+      return;
+    }
+    const headers = ['Date', 'Type', 'Category', 'Description', 'Amount', 'Method'];
+    const rows = combined.map((item) => [
+      `"${item.Date || ''}"`,
+      `"${item.Type || ''}"`,
+      `"${item.Category || ''}"`,
+      `"${item.Description || ''}"`,
+      item.Amount || 0,
+      `"${item.Method || ''}"`,
+    ]);
+    const csvContent = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+    downloadFile(csvContent, `madrasa_financial_ledger_${new Date().toISOString().split('T')[0]}.csv`, 'text/csv;charset=utf-8;');
+    addNotification('success', 'এক্সপোর্ট সফল', 'আর্থিক লেনদেন CSV ফাইল হিসেবে ডাউনলোড হয়েছে।');
+  };
+
+  const exportFullSystemBackup = () => {
+    const fullBackup = {
+      madrasaInfo,
+      students,
+      fees,
+      transactions,
+      boardingStudents,
+      boardingTransactions,
+      teachers,
+      classes,
+      academicYears,
+      accountCategoriesFull,
+      users,
+      backupDate: new Date().toISOString(),
+    };
+    const dataStr = JSON.stringify(fullBackup, null, 2);
+    downloadFile(dataStr, `madrasa_full_system_backup_${new Date().toISOString().split('T')[0]}.json`, 'application/json');
+    addNotification('success', 'ব্যাকআপ সফল', 'সম্পূর্ণ সিস্টেমের ব্যাকআপ ফাইল ডাউনলোড হয়েছে।');
+  };
+
   const settingsTabs: { id: SubNavigationItem; label: string; icon: React.ComponentType<{ className?: string }> }[] = ([
-    { id: 'madrasa-information', label: t('Madrasa Information'), icon: Building2 },
-    { id: 'user-management', label: t('User Management'), icon: Users },
-    { id: 'academic-year', label: t('Academic Year'), icon: Calendar },
-    { id: 'classes', label: t('Classes'), icon: Layers },
-    { id: 'account-categories', label: t('Account Categories'), icon: Tag },
-    { id: 'login-logout', label: t('Login / Logout'), icon: LogOut },
-    { id: 'reset-website-data', label: t('Reset Website Data'), icon: RotateCcw },
-    { id: 'refresh-reload', label: t('Refresh / Reload'), icon: RefreshCw },
-    { id: 'system-restart-reboot', label: t('System Restart / Reboot'), icon: Power },
+    { id: 'madrasa-information', label: 'মাদ্রাসা তথ্য', icon: Building2 },
+    { id: 'user-management', label: 'ব্যবহারকারী নিয়ন্ত্রণ', icon: Users },
+    { id: 'academic-year', label: 'শিক্ষাবর্ষ', icon: Calendar },
+    { id: 'classes', label: 'শ্রেণীসমূহ', icon: Layers },
+    { id: 'account-categories', label: 'হিসাব শ্রেণী', icon: Tag },
+    { id: 'data-backup', label: 'ডাটা ব্যাকআপ ও এক্সপোর্ট', icon: Database },
+    { id: 'login-logout', label: 'লগইন / লগআউট', icon: LogOut },
+    { id: 'reset-website-data', label: 'ওয়েবসাইট ডাটা রিসেট', icon: RotateCcw },
+    { id: 'refresh-reload', label: 'রিফ্রেশ / রিলোড', icon: RefreshCw },
+    { id: 'system-restart-reboot', label: 'সিস্টেম রিস্টার্ট', icon: Power },
   ] as { id: SubNavigationItem; label: string; icon: React.ComponentType<{ className?: string }> }[]).filter((tab) => {
     const isStaff = adminProfile?.role === 'staff';
     if (isStaff) {
@@ -309,8 +415,8 @@ export const SettingsPage: React.FC = () => {
   return (
     <div className="space-y-6">
       <Breadcrumb
-        sectionTitle="Settings"
-        subItemTitle={settingsTabs.find((t) => t.id === activeSubItem)?.label || t('Madrasa Information')}
+        sectionTitle="সেটিংস"
+        subItemTitle={settingsTabs.find((t) => t.id === activeSubItem)?.label || 'মাদ্রাসা তথ্য'}
         sectionKey="settings"
         subItemKey={activeSubItem}
       />
@@ -318,9 +424,9 @@ export const SettingsPage: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-xl font-bold tracking-tight text-slate-900">{t('Settings')}</h2>
+          <h2 className="text-xl font-bold tracking-tight text-slate-900">সেটিংস</h2>
           <p className="text-xs text-slate-500">
-            {t('Configure institutional profile, academic terms, roles, and administrative controls')}
+            প্রাতিষ্ঠানিক প্রোফাইল, শিক্ষাবর্ষ, ভূমিকা, ডাটা ব্যাকআপ এবং প্রশাসনিক নিয়ন্ত্রণ কনফিগার করুন
           </p>
         </div>
       </div>
@@ -345,7 +451,7 @@ export const SettingsPage: React.FC = () => {
                 }
                 setActiveNav('settings', tab.id);
               }}
-              className={`flex items-center gap-2 whitespace-nowrap rounded-lg px-3 py-2 text-xs font-semibold transition-colors ${
+              className={`flex items-center gap-2 whitespace-nowrap rounded-lg px-3 py-2 text-xs font-semibold transition-colors cursor-pointer ${
                 isActive
                   ? 'bg-slate-900 text-white shadow-xs'
                   : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
@@ -363,13 +469,13 @@ export const SettingsPage: React.FC = () => {
         <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-xs">
           <h3 className="text-sm font-bold text-slate-900 mb-4 pb-2 border-b border-slate-100 flex items-center gap-2">
             <Building2 className="h-4 w-4 text-emerald-600" />
-            <span>Madrasa Profile & Institutional Details</span>
+            <span>মাদ্রাসা প্রোফাইল ও প্রাতিষ্ঠানিক বিবরণ</span>
           </h3>
 
           <form onSubmit={handleInfoSubmit} className="space-y-4 text-xs">
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
               <div className="sm:col-span-2">
-                <label className="block font-semibold text-slate-700 mb-1">Madrasa Official Name</label>
+                <label className="block font-semibold text-slate-700 mb-1">মাদ্রাসার প্রাতিষ্ঠানিক নাম</label>
                 <input
                   type="text"
                   required
@@ -380,7 +486,7 @@ export const SettingsPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">Registration #</label>
+                <label className="block font-semibold text-slate-700 mb-1">রেজিস্ট্রেশন নং</label>
                 <input
                   type="text"
                   required
@@ -391,7 +497,7 @@ export const SettingsPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">Principal / Muhtamim</label>
+                <label className="block font-semibold text-slate-700 mb-1">মুহতামিম / প্রিন্সিপাল</label>
                 <input
                   type="text"
                   required
@@ -402,7 +508,7 @@ export const SettingsPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">Official Phone</label>
+                <label className="block font-semibold text-slate-700 mb-1">অফিসিয়াল ফোন</label>
                 <input
                   type="text"
                   required
@@ -413,7 +519,7 @@ export const SettingsPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">Official Email</label>
+                <label className="block font-semibold text-slate-700 mb-1">অফিসিয়াল ইমেইল</label>
                 <input
                   type="email"
                   required
@@ -424,7 +530,7 @@ export const SettingsPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">Bank Name</label>
+                <label className="block font-semibold text-slate-700 mb-1">ব্যাংকের নাম</label>
                 <input
                   type="text"
                   required
@@ -435,7 +541,7 @@ export const SettingsPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">Bank Account Number</label>
+                <label className="block font-semibold text-slate-700 mb-1">ব্যাংক হিসাব নম্বর</label>
                 <input
                   type="text"
                   required
@@ -446,7 +552,7 @@ export const SettingsPage: React.FC = () => {
               </div>
 
                <div>
-                <label className="block font-semibold text-slate-700 mb-1">Established Year</label>
+                <label className="block font-semibold text-slate-700 mb-1">প্রতিষ্ঠিত সন</label>
                 <input
                   type="text"
                   required
@@ -457,49 +563,46 @@ export const SettingsPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">Website URL</label>
+                <label className="block font-semibold text-slate-700 mb-1">ওয়েবসাইট ঠিকানা</label>
                 <input
                   type="text"
                   value={infoForm.website || ''}
                   onChange={(e) => setInfoForm({ ...infoForm, website: e.target.value })}
-                  placeholder="e.g. www.darululoom-madrasa.org"
+                  placeholder="যেমন: www.madrasa.org"
                   className="w-full rounded-lg border border-slate-200 p-2.5 text-xs text-slate-900 focus:outline-hidden font-mono"
                 />
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">Madrasa Logo</label>
+                <label className="block font-semibold text-slate-700 mb-1">মাদ্রাসা লোগো</label>
                 <div className="flex items-center gap-3 p-1 border border-slate-200 rounded-lg bg-slate-50">
                   {infoForm.logo ? (
                     <img
                       src={infoForm.logo}
-                      alt="Madrasa Logo"
+                      alt="Logo"
                       className="h-10 w-10 rounded-lg border border-slate-200 object-contain p-0.5 bg-white shrink-0"
                     />
                   ) : (
                     <div className="h-10 w-10 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-xs border border-emerald-200 shrink-0">
-                      LOGO
+                      লোগো
                     </div>
                   )}
                   <div className="flex flex-col gap-1">
                     <label className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100 cursor-pointer shadow-2xs">
                       <Image className="h-3.5 w-3.5 text-slate-500" />
-                      <span>Upload Logo</span>
+                      <span>লোগো আপলোড</span>
                       <input
                         type="file"
                         accept="image/*"
-                        onChange={(e) => {
+                        onChange={async (e) => {
                           const file = e.target.files?.[0];
                           if (file) {
-                            if (file.size > 1.5 * 1024 * 1024) {
-                              addNotification('error', 'Image too large', 'Logo size must not exceed 1.5MB.');
-                              return;
+                            try {
+                              const compressed = await compressImage(file, 300, 300, 0.7);
+                              setInfoForm({ ...infoForm, logo: compressed });
+                            } catch (err) {
+                              console.error('Logo compression error:', err);
                             }
-                            const reader = new FileReader();
-                            reader.onloadend = () => {
-                              setInfoForm({ ...infoForm, logo: reader.result as string });
-                            };
-                            reader.readAsDataURL(file);
                           }
                         }}
                         className="hidden"
@@ -509,9 +612,57 @@ export const SettingsPage: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => setInfoForm({ ...infoForm, logo: '' })}
-                        className="text-left text-[10px] text-red-600 hover:underline"
+                        className="text-left text-[10px] text-red-600 hover:underline cursor-pointer"
                       >
-                        Remove Logo
+                        লোগো সরান
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">মাদ্রাসা ভবন / ক্যাম্পাসের ছবি (ড্যাশবোর্ড ব্যানার)</label>
+                <div className="flex items-center gap-3 p-1 border border-slate-200 rounded-lg bg-slate-50">
+                  {infoForm.buildingPhoto ? (
+                    <img
+                      src={infoForm.buildingPhoto}
+                      alt="Building"
+                      className="h-10 w-16 rounded-lg border border-slate-200 object-cover p-0.5 bg-white shrink-0"
+                    />
+                  ) : (
+                    <div className="h-10 w-16 rounded-lg bg-blue-100 text-blue-800 flex items-center justify-center font-bold text-[10px] border border-blue-200 shrink-0">
+                      ভবন ছবি
+                    </div>
+                  )}
+                  <div className="flex flex-col gap-1">
+                    <label className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100 cursor-pointer shadow-2xs">
+                      <Image className="h-3.5 w-3.5 text-slate-500" />
+                      <span>ক্যাম্পাস ছবি আপলোড</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            try {
+                              const compressed = await compressImage(file, 1200, 800, 0.75);
+                              setInfoForm({ ...infoForm, buildingPhoto: compressed });
+                            } catch (err) {
+                              console.error('Building photo compression error:', err);
+                            }
+                          }
+                        }}
+                        className="hidden"
+                      />
+                    </label>
+                    {infoForm.buildingPhoto && (
+                      <button
+                        type="button"
+                        onClick={() => setInfoForm({ ...infoForm, buildingPhoto: '' })}
+                        className="text-left text-[10px] text-red-600 hover:underline cursor-pointer"
+                      >
+                        ছবি সরান
                       </button>
                     )}
                   </div>
@@ -519,7 +670,7 @@ export const SettingsPage: React.FC = () => {
               </div>
 
               <div className="sm:col-span-3">
-                <label className="block font-semibold text-slate-700 mb-1">Physical Address</label>
+                <label className="block font-semibold text-slate-700 mb-1">পূর্ণ ঠিকানা</label>
                 <input
                   type="text"
                   required
@@ -530,12 +681,12 @@ export const SettingsPage: React.FC = () => {
               </div>
 
               <div className="sm:col-span-3">
-                <label className="block font-semibold text-slate-700 mb-1">Institutional Description</label>
+                <label className="block font-semibold text-slate-700 mb-1">প্রাতিষ্ঠানিক বিবরণী</label>
                 <textarea
                   rows={3}
                   value={infoForm.description || ''}
                   onChange={(e) => setInfoForm({ ...infoForm, description: e.target.value })}
-                  placeholder="Brief description of the Madrasa, its mission, or history..."
+                  placeholder="মাদ্রাসার সংক্ষিপ্ত ইতিহাস বা লক্ষ্য..."
                   className="w-full rounded-lg border border-slate-200 p-2.5 text-xs text-slate-900 focus:outline-hidden"
                 />
               </div>
@@ -545,9 +696,9 @@ export const SettingsPage: React.FC = () => {
               <button
                 type="submit"
                 disabled={adminProfile?.role === 'staff'}
-                className="rounded-lg bg-emerald-700 px-5 py-2.5 text-xs font-semibold text-white hover:bg-emerald-800 transition-colors shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                className="rounded-lg bg-emerald-700 px-5 py-2.5 text-xs font-semibold text-white hover:bg-emerald-800 transition-colors shadow-xs disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
               >
-                {adminProfile?.role === 'staff' ? 'Read-Only (Access Restricted)' : 'Save Institutional Changes'}
+                {adminProfile?.role === 'staff' ? 'রিড-অনলি (অ্যাক্সেস সীমিত)' : 'পরিবর্তন সংরক্ষণ করুন'}
               </button>
             </div>
           </form>
@@ -559,15 +710,15 @@ export const SettingsPage: React.FC = () => {
         <div className="rounded-xl border border-slate-200 bg-white shadow-xs overflow-hidden">
           <div className="flex items-center justify-between p-5 border-b border-slate-100">
             <div>
-              <h3 className="text-sm font-bold text-slate-900">Office Users & Administrative Roles</h3>
-              <p className="text-xs text-slate-500">Assign permission levels for office staff and accountants</p>
+              <h3 className="text-sm font-bold text-slate-900">অফিস ব্যবহারকারী ও প্রশাসনিক ভূমিকা</h3>
+              <p className="text-xs text-slate-500">অফিস স্টাফ এবং হিসাবরক্ষকদের জন্য অনুমতি স্তর নির্ধারণ করুন</p>
             </div>
             <button
               onClick={() => setIsAddUserModalOpen(true)}
               className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-700 px-3.5 py-2 text-xs font-semibold text-white hover:bg-emerald-800 transition-colors shadow-xs cursor-pointer"
             >
               <Plus className="h-4 w-4" />
-              <span>Add User Account</span>
+              <span>নতুন ব্যবহারকারী যোগ করুন</span>
             </button>
           </div>
 
@@ -575,12 +726,12 @@ export const SettingsPage: React.FC = () => {
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
                 <tr>
-                  <th className="px-5 py-3.5">User</th>
-                  <th className="px-5 py-3.5">Email</th>
-                  <th className="px-5 py-3.5">System Role</th>
-                  <th className="px-5 py-3.5">Status</th>
-                  <th className="px-5 py-3.5">Last Active</th>
-                  <th className="px-5 py-3.5 text-right">Actions</th>
+                  <th className="px-5 py-3.5">ব্যবহারকারী</th>
+                  <th className="px-5 py-3.5">ইমেইল</th>
+                  <th className="px-5 py-3.5">সিস্টেম রোল</th>
+                  <th className="px-5 py-3.5">স্ট্যাটাস</th>
+                  <th className="px-5 py-3.5">সর্বশেষ সক্রিয়</th>
+                  <th className="px-5 py-3.5 text-right">কার্যক্রম</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -605,7 +756,7 @@ export const SettingsPage: React.FC = () => {
                     <td className="px-5 py-3.5 whitespace-nowrap">
                       <span className={`inline-flex items-center gap-1.5 font-medium ${u.status === 'Active' ? 'text-emerald-700' : 'text-slate-400'}`}>
                         <span className={`h-1.5 w-1.5 rounded-full ${u.status === 'Active' ? 'bg-emerald-600' : 'bg-slate-400'}`}></span>
-                        {u.status}
+                        {u.status === 'Active' ? 'সক্রিয়' : 'নিষ্ক্রিয়'}
                       </span>
                     </td>
                     <td className="px-5 py-3.5 whitespace-nowrap text-slate-400">
@@ -616,7 +767,7 @@ export const SettingsPage: React.FC = () => {
                         <button
                           onClick={() => openEditUser(u)}
                           className="p-1 text-slate-500 hover:text-emerald-700 hover:bg-slate-100 rounded-md transition-colors cursor-pointer"
-                          title="Edit User"
+                          title="সম্পাদনা"
                         >
                           <Edit2 className="h-3.5 w-3.5" />
                         </button>
@@ -624,7 +775,7 @@ export const SettingsPage: React.FC = () => {
                           <button
                             onClick={() => setDeletingUser(u)}
                             className="p-1 text-slate-500 hover:text-red-700 hover:bg-slate-100 rounded-md transition-colors cursor-pointer"
-                            title="Delete User"
+                            title="মুছে ফেলুন"
                           >
                             <Trash2 className="h-3.5 w-3.5" />
                           </button>
@@ -644,8 +795,8 @@ export const SettingsPage: React.FC = () => {
         <div className="rounded-xl border border-slate-200 bg-white shadow-xs overflow-hidden">
           <div className="flex items-center justify-between p-5 border-b border-slate-100">
             <div>
-              <h3 className="text-sm font-bold text-slate-900">Academic Year & Term Config</h3>
-              <p className="text-xs text-slate-500">Manage academic sessions, current active terms, and system-wide dates</p>
+              <h3 className="text-sm font-bold text-slate-900">শিক্ষাবর্ষ ও টার্ম কনফিগারেশন</h3>
+              <p className="text-xs text-slate-500">শিক্ষাবর্ষ এবং বর্তমান সক্রিয় টার্ম পরিচালনা করুন</p>
             </div>
             {adminProfile?.role !== 'staff' ? (
               <button
@@ -653,11 +804,11 @@ export const SettingsPage: React.FC = () => {
                 className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-700 px-3.5 py-2 text-xs font-semibold text-white hover:bg-emerald-800 transition-colors shadow-xs cursor-pointer"
               >
                 <Plus className="h-4 w-4" />
-                <span>Add Academic Year</span>
+                <span>শিক্ষাবর্ষ যোগ করুন</span>
               </button>
             ) : (
               <span className="text-xs text-slate-400 font-semibold bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-lg">
-                Read-Only Mode
+                রিড-অনলি মোড
               </span>
             )}
           </div>
@@ -666,32 +817,32 @@ export const SettingsPage: React.FC = () => {
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
                 <tr>
-                  <th className="px-5 py-3.5">Session / Year</th>
-                  <th className="px-5 py-3.5">Status</th>
-                  <th className="px-5 py-3.5">Created At</th>
-                  {adminProfile?.role !== 'staff' && <th className="px-5 py-3.5 text-right">Actions</th>}
+                  <th className="px-5 py-3.5">সেশন / বছর</th>
+                  <th className="px-5 py-3.5">স্ট্যাটাস</th>
+                  <th className="px-5 py-3.5">তৈরির তারিখ</th>
+                  {adminProfile?.role !== 'staff' && <th className="px-5 py-3.5 text-right">কার্যক্রম</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {academicYears.map((ay) => (
                   <tr key={ay.id} className="hover:bg-slate-50/70 transition-colors">
                     <td className="px-5 py-3.5 whitespace-nowrap font-bold text-slate-900">
-                      Session {ay.year}
+                      সেশন {ay.year}
                     </td>
                     <td className="px-5 py-3.5 whitespace-nowrap">
                       {ay.status === 'Active' ? (
                         <span className="inline-flex items-center gap-1.5 text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full font-medium text-[10px]">
                           <span className="h-1.5 w-1.5 rounded-full bg-emerald-600 animate-pulse"></span>
-                          Current Term (Active)
+                          সক্রিয় টার্ম (Current)
                         </span>
                       ) : (
                         <span className="inline-flex items-center gap-1.5 text-slate-400 bg-slate-50 border border-slate-200 px-2.5 py-0.5 rounded-full font-medium text-[10px]">
-                          Inactive
+                          নিষ্ক্রিয়
                         </span>
                       )}
                     </td>
                     <td className="px-5 py-3.5 whitespace-nowrap text-slate-500 font-mono">
-                      {ay.createdAt ? new Date(ay.createdAt).toLocaleDateString() : 'N/A'}
+                      {ay.createdAt ? new Date(ay.createdAt).toLocaleDateString() : 'প্রযোজ্য নয়'}
                     </td>
                     {adminProfile?.role !== 'staff' && (
                       <td className="px-5 py-3.5 whitespace-nowrap text-right">
@@ -702,7 +853,7 @@ export const SettingsPage: React.FC = () => {
                               className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-md px-2 py-1 transition-colors cursor-pointer"
                             >
                               <Power className="h-3 w-3" />
-                              <span>Activate Term</span>
+                              <span>টার্ম সক্রিয় করুন</span>
                             </button>
                           ) : (
                             <button
@@ -710,13 +861,13 @@ export const SettingsPage: React.FC = () => {
                               className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-600 hover:text-slate-800 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-md px-2 py-1 transition-colors cursor-pointer"
                             >
                               <PowerOff className="h-3 w-3" />
-                              <span>Deactivate</span>
+                              <span>নিষ্ক্রিয় করুন</span>
                             </button>
                           )}
                           <button
                             onClick={() => setDeletingAy(ay)}
                             className="p-1 text-slate-400 hover:text-red-700 hover:bg-slate-100 rounded-md transition-colors cursor-pointer"
-                            title="Delete Session"
+                            title="সেশন মুছে ফেলুন"
                           >
                             <Trash2 className="h-3.5 w-3.5" />
                           </button>
@@ -736,8 +887,8 @@ export const SettingsPage: React.FC = () => {
         <div className="rounded-xl border border-slate-200 bg-white shadow-xs overflow-hidden">
           <div className="flex items-center justify-between p-5 border-b border-slate-100">
             <div>
-              <h3 className="text-sm font-bold text-slate-900">{t('Academic Classes & Enrolled Sections')}</h3>
-              <p className="text-xs text-slate-500">{t('Official class catalog and assigned class teachers')}</p>
+              <h3 className="text-sm font-bold text-slate-900">একাডেমিক শ্রেণী ও সেকশন</h3>
+              <p className="text-xs text-slate-500">শ্রেণী তালিকা এবং দায়িত্বপ্রাপ্ত শ্রেণী শিক্ষক পরিচালনা করুন</p>
             </div>
             {adminProfile?.role !== 'staff' ? (
               <button
@@ -752,11 +903,11 @@ export const SettingsPage: React.FC = () => {
                 className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-700 px-3.5 py-2 text-xs font-semibold text-white hover:bg-emerald-800 transition-colors shadow-xs cursor-pointer"
               >
                 <Plus className="h-4 w-4" />
-                <span>{t('Add Class')}</span>
+                <span>শ্রেণী যোগ করুন</span>
               </button>
             ) : (
               <span className="text-xs text-slate-400 font-semibold bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-lg">
-                {t('Read-Only Mode')}
+                রিড-অনলি মোড
               </span>
             )}
           </div>
@@ -765,12 +916,12 @@ export const SettingsPage: React.FC = () => {
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
                 <tr>
-                  <th className="px-5 py-3.5">{t('Class Name')}</th>
-                  <th className="px-5 py-3.5">{t('Sections')}</th>
-                  <th className="px-5 py-3.5">{t('Class Teacher')}</th>
-                  <th className="px-5 py-3.5 text-right">{t('Standard Monthly Fee')}</th>
-                  <th className="px-5 py-3.5 text-right">{t('Capacity / Status')}</th>
-                  {adminProfile?.role !== 'staff' && <th className="px-5 py-3.5 text-right">{t('Actions')}</th>}
+                  <th className="px-5 py-3.5">শ্রেণীর নাম</th>
+                  <th className="px-5 py-3.5">সেকশনসমূহ</th>
+                  <th className="px-5 py-3.5">শ্রেণী শিক্ষক</th>
+                  <th className="px-5 py-3.5 text-right">মাসিক ফি (৳)</th>
+                  <th className="px-5 py-3.5 text-right">ছাত্র সংখ্যা</th>
+                  {adminProfile?.role !== 'staff' && <th className="px-5 py-3.5 text-right">কার্যক্রম</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -785,7 +936,7 @@ export const SettingsPage: React.FC = () => {
                           key={sec}
                           className="mr-1.5 inline-block rounded bg-slate-100 px-2 py-0.5 font-mono text-[10px] font-semibold text-slate-700"
                         >
-                          Sec {sec}
+                          সেকশন {sec}
                         </span>
                       ))}
                     </td>
@@ -793,10 +944,10 @@ export const SettingsPage: React.FC = () => {
                       {c.classTeacher}
                     </td>
                     <td className="px-5 py-3.5 whitespace-nowrap text-right font-mono tabular-nums font-bold text-emerald-800">
-                      ৳{c.monthlyFee}/mo
+                      ৳{c.monthlyFee}/মাস
                     </td>
                     <td className="px-5 py-3.5 whitespace-nowrap text-right text-slate-600">
-                      <span className="font-mono">{c.totalStudents} {t('students')}</span>
+                      <span className="font-mono">{c.totalStudents} জন ছাত্র</span>
                     </td>
                     {adminProfile?.role !== 'staff' && (
                       <td className="px-5 py-3.5 whitespace-nowrap text-right">
@@ -804,14 +955,14 @@ export const SettingsPage: React.FC = () => {
                           <button
                             onClick={() => openEditClass(c)}
                             className="p-1 text-slate-500 hover:text-emerald-700 hover:bg-slate-100 rounded-md transition-colors cursor-pointer"
-                            title={t('Edit Class')}
+                            title="সম্পাদনা"
                           >
                             <Edit2 className="h-3.5 w-3.5" />
                           </button>
                           <button
                             onClick={() => setDeletingClass(c)}
                             className="p-1 text-slate-400 hover:text-red-700 hover:bg-slate-100 rounded-md transition-colors cursor-pointer"
-                            title={t('Delete Class')}
+                            title="মুছে ফেলুন"
                           >
                             <Trash2 className="h-3.5 w-3.5" />
                           </button>
@@ -841,14 +992,14 @@ export const SettingsPage: React.FC = () => {
               className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-700 px-3.5 py-2 text-xs font-semibold text-white hover:bg-emerald-800 transition-colors shadow-xs cursor-pointer"
             >
               <Plus className="h-4 w-4" />
-              <span>{t('Add Account Category')}</span>
+              <span>হিসাব ক্যাটাগরি যোগ করুন</span>
             </button>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs">
               <h4 className="text-xs font-bold text-emerald-800 uppercase tracking-wider mb-3 pb-2 border-b border-slate-100">
-                {t('Income Categories (Ledger Heads)')}
+                আয়ের খাতসমূহ (Income Ledger Heads)
               </h4>
               <ul className="space-y-2 text-xs">
                 {accountCategoriesFull
@@ -859,27 +1010,27 @@ export const SettingsPage: React.FC = () => {
                       className="flex items-center justify-between p-2.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-800 font-medium"
                     >
                       <div className="flex flex-col">
-                        <span>{t(cat.name)}</span>
+                        <span>{cat.name}</span>
                         {cat.description && (
                           <span className="text-[10px] text-slate-400 font-normal">{cat.description}</span>
                         )}
                       </div>
                       <div className="flex items-center gap-2">
                         <span className={`inline-block px-1.5 py-0.5 rounded text-[9px] font-bold ${cat.status === 'Active' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-slate-100 text-slate-400 border border-slate-200'}`}>
-                          {t(cat.status)}
+                          {cat.status === 'Active' ? 'সক্রিয়' : 'নিষ্ক্রিয়'}
                         </span>
                         <div className="flex items-center gap-0.5">
                           <button
                             onClick={() => openEditCat(cat)}
                             className="p-1 text-slate-400 hover:text-emerald-700 rounded-md hover:bg-white border border-transparent hover:border-slate-200 cursor-pointer"
-                            title={t('Edit')}
+                            title="সম্পাদনা"
                           >
                             <Edit2 className="h-3 w-3" />
                           </button>
                           <button
                             onClick={() => setDeletingCat(cat)}
                             className="p-1 text-slate-400 hover:text-red-700 rounded-md hover:bg-white border border-transparent hover:border-slate-200 cursor-pointer"
-                            title={t('Delete')}
+                            title="মুছে ফেলুন"
                           >
                             <Trash2 className="h-3 w-3" />
                           </button>
@@ -892,7 +1043,7 @@ export const SettingsPage: React.FC = () => {
 
             <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs">
               <h4 className="text-xs font-bold text-amber-800 uppercase tracking-wider mb-3 pb-2 border-b border-slate-100">
-                {t('Expense Categories (Voucher Heads)')}
+                ব্যয়ের খাতসমূহ (Expense Voucher Heads)
               </h4>
               <ul className="space-y-2 text-xs">
                 {accountCategoriesFull
@@ -903,27 +1054,27 @@ export const SettingsPage: React.FC = () => {
                       className="flex items-center justify-between p-2.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-800 font-medium"
                     >
                       <div className="flex flex-col">
-                        <span>{t(cat.name)}</span>
+                        <span>{cat.name}</span>
                         {cat.description && (
                           <span className="text-[10px] text-slate-400 font-normal">{cat.description}</span>
                         )}
                       </div>
                       <div className="flex items-center gap-2">
                         <span className={`inline-block px-1.5 py-0.5 rounded text-[9px] font-bold ${cat.status === 'Active' ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-slate-100 text-slate-400 border border-slate-200'}`}>
-                          {t(cat.status)}
+                          {cat.status === 'Active' ? 'সক্রিয়' : 'নিষ্ক্রিয়'}
                         </span>
                         <div className="flex items-center gap-0.5">
                           <button
                             onClick={() => openEditCat(cat)}
                             className="p-1 text-slate-400 hover:text-emerald-700 rounded-md hover:bg-white border border-transparent hover:border-slate-200 cursor-pointer"
-                            title={t('Edit')}
+                            title="সম্পাদনা"
                           >
                             <Edit2 className="h-3 w-3" />
                           </button>
                           <button
                             onClick={() => setDeletingCat(cat)}
                             className="p-1 text-slate-400 hover:text-red-700 rounded-md hover:bg-white border border-transparent hover:border-slate-200 cursor-pointer"
-                            title={t('Delete')}
+                            title="মুছে ফেলুন"
                           >
                             <Trash2 className="h-3 w-3" />
                           </button>
@@ -937,35 +1088,132 @@ export const SettingsPage: React.FC = () => {
         </div>
       )}
 
+      {/* Section 6: Data Backup & Export (NEW) */}
+      {activeSubItem === 'data-backup' && (
+        <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-xs space-y-6">
+          <div className="border-b border-slate-100 pb-3">
+            <h3 className="text-sm font-bold text-slate-900 uppercase flex items-center gap-2">
+              <Database className="h-4 w-4 text-emerald-600" />
+              <span>ডাটা ব্যাকআপ ও এক্সপোর্ট (Data Backup & Export)</span>
+            </h3>
+            <p className="text-xs text-slate-500 mt-0.5">
+              মাদ্রাসার শিক্ষার্থী, হিসাব এবং আর্থিক রেকর্ডসমূহ JSON অথবা CSV ফাইল হিসেবে ডাউনলোড করুন।
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {/* 1. Students Backup Card */}
+            <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-5 space-y-4 flex flex-col justify-between">
+              <div>
+                <div className="h-10 w-10 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center font-bold mb-3">
+                  🎓
+                </div>
+                <h4 className="text-xs font-bold text-slate-900 uppercase">শিক্ষার্থী তালিকা ব্যাকআপ</h4>
+                <p className="text-[11px] text-slate-500 mt-1">
+                  সকল শিক্ষার্থীর প্রোফাইল, আইডি, শ্রেণী এবং যোগাযোগের তথ্য এক্সপোর্ট করুন।
+                </p>
+              </div>
+              <div className="flex flex-col gap-2 pt-3 border-t border-slate-200/60">
+                <button
+                  onClick={exportStudentsJSON}
+                  className="w-full flex items-center justify-center gap-1.5 rounded-lg bg-blue-600 py-2 text-xs font-semibold text-white hover:bg-blue-700 transition-colors shadow-xs cursor-pointer"
+                >
+                  <FileCode className="h-3.5 w-3.5" />
+                  <span>JSON ডাউনলোড</span>
+                </button>
+                <button
+                  onClick={exportStudentsCSV}
+                  className="w-full flex items-center justify-center gap-1.5 rounded-lg border border-slate-300 bg-white py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors shadow-xs cursor-pointer"
+                >
+                  <FileSpreadsheet className="h-3.5 w-3.5 text-emerald-600" />
+                  <span>CSV ডাউনলোড</span>
+                </button>
+              </div>
+            </div>
+
+            {/* 2. Financial & Account Records Backup */}
+            <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-5 space-y-4 flex flex-col justify-between">
+              <div>
+                <div className="h-10 w-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold mb-3">
+                  💰
+                </div>
+                <h4 className="text-xs font-bold text-slate-900 uppercase">আর্থিক হিসাব ও লেনদেন</h4>
+                <p className="text-[11px] text-slate-500 mt-1">
+                  শিক্ষার্থী ফি, আয়, ব্যয় এবং বোর্ডিং লেনদেনের সমস্ত হিসাব এক্সপোর্ট করুন।
+                </p>
+              </div>
+              <div className="flex flex-col gap-2 pt-3 border-t border-slate-200/60">
+                <button
+                  onClick={exportFinancialJSON}
+                  className="w-full flex items-center justify-center gap-1.5 rounded-lg bg-emerald-600 py-2 text-xs font-semibold text-white hover:bg-emerald-700 transition-colors shadow-xs cursor-pointer"
+                >
+                  <FileCode className="h-3.5 w-3.5" />
+                  <span>JSON ডাউনলোড</span>
+                </button>
+                <button
+                  onClick={exportFinancialCSV}
+                  className="w-full flex items-center justify-center gap-1.5 rounded-lg border border-slate-300 bg-white py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors shadow-xs cursor-pointer"
+                >
+                  <FileSpreadsheet className="h-3.5 w-3.5 text-emerald-600" />
+                  <span>CSV ডাউনলোড</span>
+                </button>
+              </div>
+            </div>
+
+            {/* 3. Full System Backup */}
+            <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-5 space-y-4 flex flex-col justify-between">
+              <div>
+                <div className="h-10 w-10 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center font-bold mb-3">
+                  📦
+                </div>
+                <h4 className="text-xs font-bold text-slate-900 uppercase">সম্পূর্ণ সিস্টেম ব্যাকআপ</h4>
+                <p className="text-[11px] text-slate-500 mt-1">
+                  মাদ্রাসার সমস্ত ডাটা (শিক্ষার্থী, ফি, হিসাব, বোর্ডিং, শিক্ষক, সেটিংস) একত্রিত করে JSON ব্যাকআপ নিন।
+                </p>
+              </div>
+              <div className="pt-3 border-t border-slate-200/60">
+                <button
+                  onClick={exportFullSystemBackup}
+                  className="w-full flex items-center justify-center gap-1.5 rounded-lg bg-purple-600 py-2.5 text-xs font-semibold text-white hover:bg-purple-700 transition-colors shadow-xs cursor-pointer"
+                >
+                  <Download className="h-4 w-4" />
+                  <span>সম্পূর্ণ সিস্টেম ব্যাকআপ ডাউনলোড</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Sub-item: Login / Logout view */}
       {activeSubItem === 'login-logout' && (
         <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-xs max-w-lg space-y-4">
           <h3 className="text-sm font-bold text-slate-900 border-b border-slate-100 pb-2 flex items-center gap-2">
             <Lock className="h-4 w-4 text-emerald-600" />
-            <span>Authentication & Session Control</span>
+            <span>অথেন্টিকেশন ও সেশন কন্ট্রোল</span>
           </h3>
 
           <div className="rounded-lg bg-slate-50 p-4 border border-slate-200 space-y-2 text-xs">
             <div className="flex justify-between">
-              <span className="text-slate-500">Current Session User:</span>
-              <strong className="text-slate-900">{currentUser?.name || 'Administrator'}</strong>
+              <span className="text-slate-500">বর্তমান সেশন ব্যবহারকারী:</span>
+              <strong className="text-slate-900">{currentUser?.name || 'অ্যাডমিনিস্ট্রেটর'}</strong>
             </div>
             <div className="flex justify-between">
-              <span className="text-slate-500">Email:</span>
+              <span className="text-slate-500">ইমেইল:</span>
               <span className="font-mono text-slate-700">{currentUser?.email || 'admin@madrasa.org'}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-slate-500">Assigned Role:</span>
-              <span className="font-semibold text-emerald-700">{currentUser?.role || 'Super Admin'}</span>
+              <span className="text-slate-500">অ্যাসাইনকৃত রোল:</span>
+              <span className="font-semibold text-emerald-700">{currentUser?.role || 'সুপার অ্যাডমিন'}</span>
             </div>
           </div>
 
           <button
             onClick={() => setIsLogoutModalOpen(true)}
-            className="w-full flex items-center justify-center gap-2 rounded-lg bg-red-600 py-2.5 text-xs font-semibold text-white hover:bg-red-700 transition-colors shadow-xs"
+            className="w-full flex items-center justify-center gap-2 rounded-lg bg-red-600 py-2.5 text-xs font-semibold text-white hover:bg-red-700 transition-colors shadow-xs cursor-pointer"
           >
             <LogOut className="h-4 w-4" />
-            <span>{currentUser ? 'Sign Out / Lock Session' : 'Sign In as Administrator'}</span>
+            <span>{currentUser ? 'সাইন আউট / সেশন লক' : 'অ্যাডমিন হিসেবে সাইন ইন'}</span>
           </button>
         </div>
       )}
@@ -978,10 +1226,9 @@ export const SettingsPage: React.FC = () => {
               <AlertTriangle className="h-6 w-6" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-red-950">Reset Website Data</h3>
+              <h3 className="text-sm font-bold text-red-950">ওয়েবসাইট ডাটা রিসেট</h3>
               <p className="text-xs text-red-700 mt-1">
-                Restores all demo data (students, fees, transactions, boarding, and settings) back
-                to their initial default state.
+                সকল ডেমো ডাটা (শিক্ষার্থী, ফি, লেনদেন, বোর্ডিং এবং সেটিংস) প্রাথমিক ডিফল্ট অবস্থায় পুনরুদ্ধার করে।
               </p>
             </div>
           </div>
@@ -989,809 +1236,536 @@ export const SettingsPage: React.FC = () => {
           <div className="pt-2">
             <button
               onClick={() => setIsResetModalOpen(true)}
-              className="flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2.5 text-xs font-semibold text-white hover:bg-red-700 shadow-xs transition-colors"
+              className="flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2.5 text-xs font-semibold text-white hover:bg-red-700 shadow-xs transition-colors cursor-pointer"
             >
               <RotateCcw className="h-4 w-4" />
-              <span>Initiate Reset Data Flow</span>
+              <span>রিসেট প্রক্রিয়া শুরু করুন</span>
             </button>
           </div>
         </div>
       )}
 
-      {/* Sub-item: Refresh / Reload trigger card */}
-      {activeSubItem === 'refresh-reload' && (
-        <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-xs max-w-xl space-y-4">
-          <h3 className="text-sm font-bold text-slate-900 border-b border-slate-100 pb-2 flex items-center gap-2">
-            <RefreshCw className="h-4 w-4 text-emerald-600" />
-            <span>Refresh / Reload Website State</span>
-          </h3>
-          <p className="text-xs text-slate-600">
-            Triggers a clean sync and refreshes local office records without altering any stored
-            entries.
-          </p>
-          <button
-            onClick={() => refreshData()}
-            disabled={isRefreshing}
-            className="flex items-center gap-2 rounded-lg bg-emerald-700 px-4 py-2.5 text-xs font-semibold text-white hover:bg-emerald-800 disabled:opacity-50 transition-colors shadow-xs"
-          >
-            <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-            <span>{isRefreshing ? 'Reloading...' : 'Reload Office Records'}</span>
-          </button>
-        </div>
-      )}
-
-      {/* Sub-item: System Restart / Reboot trigger card */}
-      {activeSubItem === 'system-restart-reboot' && (
-        <div className="rounded-xl border border-amber-200 bg-amber-50/40 p-6 shadow-xs max-w-xl space-y-4">
-          <div className="flex items-start gap-3">
-            <div className="rounded-lg bg-amber-100 p-2 text-amber-600">
-              <Power className="h-6 w-6" />
-            </div>
-            <div>
-              <h3 className="text-sm font-bold text-amber-950">System Restart / Reboot</h3>
-              <p className="text-xs text-amber-700 mt-1">
-                Safely reboots the application runtime environment and clears volatile memory
-                caches.
-              </p>
-            </div>
-          </div>
-
-          <div className="pt-2">
-            <button
-              onClick={() => setIsRestartModalOpen(true)}
-              className="flex items-center gap-2 rounded-lg bg-amber-600 px-4 py-2.5 text-xs font-semibold text-white hover:bg-amber-700 shadow-xs transition-colors"
-            >
-              <Power className="h-4 w-4" />
-              <span>Initiate System Restart</span>
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* IMPORTANT SAFETY MODAL: Reset Website Data */}
+      {/* Reset Website Data Modal */}
       <Modal
         isOpen={isResetModalOpen}
         onClose={() => setIsResetModalOpen(false)}
-        title="Are you sure you want to reset the website data?"
-        subtitle="This action is destructive and irreversible."
-        isDestructive={true}
-        maxWidth="md"
-        footer={
-          <>
-            <button
-              onClick={() => setIsResetModalOpen(false)}
-              className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleConfirmReset}
-              className="rounded-lg bg-red-600 px-4 py-2 text-xs font-semibold text-white hover:bg-red-700"
-            >
-              Confirm Reset
-            </button>
-          </>
-        }
+        title="ওয়েবসাইট ডাটা রিসেট নিশ্চিতকরণ"
+        subtitle="সতর্কতা: এই পদক্ষেপটি অপরিবর্তনীয়।"
+        maxWidth="sm"
       >
-        <div className="space-y-3 text-xs text-slate-600">
-          <p>
-            You are about to restore the Madrasa Office Management System data to the original
-            demonstration snapshot.
-          </p>
-          <div className="rounded-lg bg-red-50 p-3 border border-red-200 text-red-800">
-            <strong>Warning:</strong> Any newly added students, fee collection receipts, Aib
-            transactions, and custom configuration entries will be permanently erased.
+        <div className="space-y-4 text-xs">
+          <div className="flex items-start gap-3 rounded-lg bg-red-50 p-3.5 text-red-800 border border-red-200">
+            <AlertTriangle className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
+            <div>
+              <strong className="block mb-1">সমস্ত বর্তমান পরিবর্তন মুছে ফেলা হবে!</strong>
+              আপনি কি নিশ্চিত যে আপনি সমস্ত ডেটা রিসেট করতে চান?
+            </div>
+          </div>
+
+          <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+            <button
+              type="button"
+              onClick={() => setIsResetModalOpen(false)}
+              className="rounded-lg border border-slate-200 px-4 py-2 font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
+            >
+              বাতিল
+            </button>
+            <button
+              type="button"
+              onClick={handleConfirmReset}
+              className="rounded-lg bg-red-600 px-4 py-2 font-semibold text-white hover:bg-red-700 cursor-pointer"
+            >
+              হ্যাঁ, রিসেট করুন
+            </button>
           </div>
         </div>
       </Modal>
 
-      {/* IMPORTANT SAFETY MODAL: System Restart / Reboot */}
+      {/* System Restart Modal */}
       <Modal
         isOpen={isRestartModalOpen}
         onClose={() => setIsRestartModalOpen(false)}
-        title="Are you sure you want to restart / reboot the system?"
-        subtitle="Office management system session will safely restart."
-        maxWidth="md"
-        footer={
-          <>
-            <button
-              onClick={() => setIsRestartModalOpen(false)}
-              className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleConfirmRestart}
-              className="rounded-lg bg-amber-600 px-4 py-2 text-xs font-semibold text-white hover:bg-amber-700"
-            >
-              Confirm Reboot
-            </button>
-          </>
-        }
+        title="সিস্টেম রিস্টার্ট / রিবুট"
+        subtitle="সেশন পুনরায় লোড ও ইনিশিয়ালাইজ করুন"
+        maxWidth="sm"
       >
-        <div className="space-y-2 text-xs text-slate-600">
-          <p>
-            Rebooting will briefly cycle the office management system session and re-initialize the
-            local cache. No stored student records or ledger entries will be lost.
+        <div className="space-y-4 text-xs">
+          <p className="text-slate-600">
+            সিস্টেম রিস্টার্ট করলে সমস্ত ক্যাশ রিফ্রেশ হবে এবং সেশন রি-ইনিশিয়ালাইজ হবে। আপনি কি রিস্টার্ট করতে চান?
           </p>
+          <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+            <button
+              type="button"
+              onClick={() => setIsRestartModalOpen(false)}
+              className="rounded-lg border border-slate-200 px-4 py-2 font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
+            >
+              বাতিল
+            </button>
+            <button
+              type="button"
+              onClick={handleConfirmRestart}
+              className="rounded-lg bg-emerald-700 px-4 py-2 font-semibold text-white hover:bg-emerald-800 cursor-pointer"
+            >
+              হ্যাঁ, রিস্টার্ট করুন
+            </button>
+          </div>
         </div>
       </Modal>
 
-      {/* Logout Confirmation Modal */}
+      {/* Logout Modal */}
       <Modal
         isOpen={isLogoutModalOpen}
         onClose={() => setIsLogoutModalOpen(false)}
-        title="Sign Out of Madrasa Office?"
-        subtitle="Confirm locking your administrative workstation."
+        title="সাইন আউট / লক সেশন"
+        subtitle="অ্যাডমিনিস্ট্রেটিভ অ্যাকাউন্ট থেকে প্রস্থান করুন"
         maxWidth="sm"
-        footer={
-          <>
-            <button
-              onClick={() => setIsLogoutModalOpen(false)}
-              className="rounded-lg border border-slate-200 px-3.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleConfirmLogout}
-              className="rounded-lg bg-slate-900 px-4 py-1.5 text-xs font-semibold text-white hover:bg-slate-800"
-            >
-              {currentUser ? 'Sign Out' : 'Sign In'}
-            </button>
-          </>
-        }
       >
-        <p className="text-xs text-slate-600">
-          {currentUser
-            ? 'Are you sure you want to lock the active session? You will be prompted to re-authenticate.'
-            : 'Click Sign In to resume administrative workstation access.'}
-        </p>
+        <div className="space-y-4 text-xs">
+          <p className="text-slate-600">
+            আপনি কি বর্তমান অ্যাকাউন্ট থেকে লগআউট করতে চান?
+          </p>
+          <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+            <button
+              type="button"
+              onClick={() => setIsLogoutModalOpen(false)}
+              className="rounded-lg border border-slate-200 px-4 py-2 font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
+            >
+              বাতিল
+            </button>
+            <button
+              type="button"
+              onClick={handleConfirmLogout}
+              className="rounded-lg bg-red-600 px-4 py-2 font-semibold text-white hover:bg-red-700 cursor-pointer"
+            >
+              লগআউট করুন
+            </button>
+          </div>
+        </div>
       </Modal>
 
       {/* Add User Modal */}
-      <Modal
-        isOpen={isAddUserModalOpen}
-        onClose={() => setIsAddUserModalOpen(false)}
-        title="Add New Administrative User"
-        subtitle="Grant office credentials to staff or teachers"
-        maxWidth="sm"
-      >
-        <form onSubmit={handleCreateUser} className="space-y-4 text-xs">
-          <div>
-            <label className="block font-semibold text-slate-700 mb-1">Full Name</label>
-            <input
-              type="text"
-              required
-              placeholder="e.g. Mufti Kamaluddin"
-              value={newUserName}
-              onChange={(e) => setNewUserName(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 p-2.5 text-xs text-slate-900 focus:outline-hidden"
-            />
-          </div>
-
-          <div>
-            <label className="block font-semibold text-slate-700 mb-1">Email Address</label>
-            <input
-              type="email"
-              required
-              placeholder="user@darululoom-madrasa.org"
-              value={newUserEmail}
-              onChange={(e) => setNewUserEmail(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 p-2.5 text-xs text-slate-900 focus:outline-hidden"
-            />
-          </div>
-
-          <div>
-            <label className="block font-semibold text-slate-700 mb-1">Role & Permissions</label>
-            <select
-              value={newUserRole}
-              onChange={(e) =>
-                setNewUserRole(e.target.value as UserAccount['role'])
-              }
-              className="w-full rounded-lg border border-slate-200 bg-white p-2.5 text-xs text-slate-900 focus:outline-hidden"
-            >
-              <option value="Super Admin">Super Admin (Full Access)</option>
-              <option value="Accountant">Accountant (Accounts & Fees)</option>
-              <option value="Admission Officer">Admission Officer (Students)</option>
-              <option value="Warden">Warden (Boarding & Mess)</option>
-              <option value="Viewer">Viewer (Read Only)</option>
-            </select>
-          </div>
-
-          <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-            <button
-              type="button"
-              onClick={() => setIsAddUserModalOpen(false)}
-              className="rounded-lg border border-slate-200 px-4 py-2 font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="rounded-lg bg-emerald-700 px-4 py-2 font-semibold text-white hover:bg-emerald-800 cursor-pointer"
-            >
-              Create Account
-            </button>
-          </div>
-        </form>
-      </Modal>
+      {isAddUserModalOpen && (
+        <Modal
+          isOpen={isAddUserModalOpen}
+          onClose={() => setIsAddUserModalOpen(false)}
+          title="নতুন ব্যবহারকারী অ্যাকাউন্ট যোগ করুন"
+          subtitle="অফিস স্টাফ বা অ্যাকাউন্ট্যান্টের জন্য লগইন অ্যাক্সেস দিন"
+          maxWidth="sm"
+        >
+          <form onSubmit={handleCreateUser} className="space-y-4 text-xs">
+            <div>
+              <label className="block font-semibold text-slate-700 mb-1">ব্যবহারকারীর নাম *</label>
+              <input
+                type="text"
+                required
+                value={newUserName}
+                onChange={(e) => setNewUserName(e.target.value)}
+                placeholder="পূর্ণ নাম..."
+                className="w-full rounded-lg border border-slate-200 p-2.5 text-xs text-slate-900 focus:outline-hidden"
+              />
+            </div>
+            <div>
+              <label className="block font-semibold text-slate-700 mb-1">ইমেইল ঠিকানা *</label>
+              <input
+                type="email"
+                required
+                value={newUserEmail}
+                onChange={(e) => setNewUserEmail(e.target.value)}
+                placeholder="email@madrasa.org"
+                className="w-full rounded-lg border border-slate-200 p-2.5 text-xs text-slate-900 focus:outline-hidden font-mono"
+              />
+            </div>
+            <div>
+              <label className="block font-semibold text-slate-700 mb-1">সিস্টেম রোল *</label>
+              <select
+                value={newUserRole}
+                onChange={(e) => setNewUserRole(e.target.value as any)}
+                className="w-full rounded-lg border border-slate-200 p-2.5 text-xs text-slate-900 bg-white focus:outline-hidden"
+              >
+                <option value="Admin">অ্যাডমিন (Admin)</option>
+                <option value="Accountant">হিসাবরক্ষক (Accountant)</option>
+                <option value="Staff">স্টাফ (Staff)</option>
+              </select>
+            </div>
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setIsAddUserModalOpen(false)}
+                className="rounded-lg border border-slate-200 px-4 py-2 font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
+              >
+                বাতিল
+              </button>
+              <button
+                type="submit"
+                className="rounded-lg bg-emerald-700 px-5 py-2 font-semibold text-white hover:bg-emerald-800 cursor-pointer"
+              >
+                ব্যবহারকারী তৈরি করুন
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
 
       {/* Edit User Modal */}
-      <Modal
-        isOpen={isEditUserModalOpen}
-        onClose={() => {
-          setIsEditUserModalOpen(false);
-          setEditingUser(null);
-        }}
-        title="Edit Administrative User"
-        subtitle={`Update settings for ${editingUser?.name}`}
-        maxWidth="sm"
-      >
-        <form onSubmit={handleEditUserSubmit} className="space-y-4 text-xs">
-          <div>
-            <label className="block font-semibold text-slate-700 mb-1">Full Name</label>
-            <input
-              type="text"
-              required
-              value={editUserName}
-              onChange={(e) => setEditUserName(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 p-2.5 text-xs text-slate-900 focus:outline-hidden"
-            />
-          </div>
-
-          <div>
-            <label className="block font-semibold text-slate-700 mb-1">Email Address</label>
-            <input
-              type="email"
-              required
-              value={editUserEmail}
-              onChange={(e) => setEditUserEmail(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 p-2.5 text-xs text-slate-900 focus:outline-hidden"
-            />
-          </div>
-
-          <div>
-            <label className="block font-semibold text-slate-700 mb-1">Role & Permissions</label>
-            <select
-              value={editUserRole}
-              onChange={(e) => setEditUserRole(e.target.value as any)}
-              className="w-full rounded-lg border border-slate-200 bg-white p-2.5 text-xs text-slate-900 focus:outline-hidden"
-            >
-              <option value="Super Admin">Super Admin (Full Access)</option>
-              <option value="Accountant">Accountant (Accounts & Fees)</option>
-              <option value="Admission Officer">Admission Officer (Students)</option>
-              <option value="Warden">Warden (Boarding & Mess)</option>
-              <option value="Viewer">Viewer (Read Only)</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block font-semibold text-slate-700 mb-1">Account Status</label>
-            <select
-              value={editUserStatus}
-              onChange={(e) => setEditUserStatus(e.target.value as any)}
-              className="w-full rounded-lg border border-slate-200 bg-white p-2.5 text-xs text-slate-900 focus:outline-hidden"
-            >
-              <option value="Active">Active</option>
-              <option value="Inactive">Inactive (Disabled)</option>
-            </select>
-          </div>
-
-          <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-            <button
-              type="button"
-              onClick={() => {
-                setIsEditUserModalOpen(false);
-                setEditingUser(null);
-              }}
-              className="rounded-lg border border-slate-200 px-4 py-2 font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="rounded-lg bg-emerald-700 px-4 py-2 font-semibold text-white hover:bg-emerald-800 cursor-pointer"
-            >
-              Save Changes
-            </button>
-          </div>
-        </form>
-      </Modal>
-
-      {/* Add Academic Year Modal */}
-      <Modal
-        isOpen={isAddAyModalOpen}
-        onClose={() => setIsAddAyModalOpen(false)}
-        title="Add New Academic Year"
-        subtitle="Introduce a new institutional session head"
-        maxWidth="sm"
-      >
-        <form onSubmit={handleCreateAy} className="space-y-4 text-xs">
-          <div>
-            <label className="block font-semibold text-slate-700 mb-1">Academic Session Year</label>
-            <input
-              type="text"
-              required
-              placeholder="e.g. 2027 or 1448"
-              value={newAyYear}
-              onChange={(e) => setNewAyYear(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 p-2.5 text-xs text-slate-900 focus:outline-hidden"
-            />
-            <p className="text-[10px] text-slate-400 mt-1">E.g., enter 2027 to start the AY-2027 term identifier.</p>
-          </div>
-
-          <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-            <button
-              type="button"
-              onClick={() => setIsAddAyModalOpen(false)}
-              className="rounded-lg border border-slate-200 px-4 py-2 font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="rounded-lg bg-emerald-700 px-4 py-2 font-semibold text-white hover:bg-emerald-800 cursor-pointer"
-            >
-              Add Session
-            </button>
-          </div>
-        </form>
-      </Modal>
+      {isEditUserModalOpen && editingUser && (
+        <Modal
+          isOpen={isEditUserModalOpen}
+          onClose={() => setIsEditUserModalOpen(false)}
+          title="ব্যবহারকারী অ্যাকাউন্ট সম্পাদনা"
+          subtitle="নাম, রোল এবং স্ট্যাটাস পরিবর্তন করুন"
+          maxWidth="sm"
+        >
+          <form onSubmit={handleEditUserSubmit} className="space-y-4 text-xs">
+            <div>
+              <label className="block font-semibold text-slate-700 mb-1">ব্যবহারকারীর নাম *</label>
+              <input
+                type="text"
+                required
+                value={editUserName}
+                onChange={(e) => setEditUserName(e.target.value)}
+                className="w-full rounded-lg border border-slate-200 p-2.5 text-xs text-slate-900 focus:outline-hidden"
+              />
+            </div>
+            <div>
+              <label className="block font-semibold text-slate-700 mb-1">ইমেইল ঠিকানা *</label>
+              <input
+                type="email"
+                required
+                value={editUserEmail}
+                onChange={(e) => setEditUserEmail(e.target.value)}
+                className="w-full rounded-lg border border-slate-200 p-2.5 text-xs text-slate-900 focus:outline-hidden font-mono"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">রোল *</label>
+                <select
+                  value={editUserRole}
+                  onChange={(e) => setEditUserRole(e.target.value as any)}
+                  className="w-full rounded-lg border border-slate-200 p-2.5 text-xs text-slate-900 bg-white focus:outline-hidden"
+                >
+                  <option value="Admin">অ্যাডমিন</option>
+                  <option value="Accountant">হিসাবরক্ষক</option>
+                  <option value="Staff">স্টাফ</option>
+                </select>
+              </div>
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">স্ট্যাটাস *</label>
+                <select
+                  value={editUserStatus}
+                  onChange={(e) => setEditUserStatus(e.target.value as any)}
+                  className="w-full rounded-lg border border-slate-200 p-2.5 text-xs text-slate-900 bg-white focus:outline-hidden"
+                >
+                  <option value="Active">সক্রিয়</option>
+                  <option value="Inactive">নিষ্ক্রিয়</option>
+                </select>
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setIsEditUserModalOpen(false)}
+                className="rounded-lg border border-slate-200 px-4 py-2 font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
+              >
+                বাতিল
+              </button>
+              <button
+                type="submit"
+                className="rounded-lg bg-emerald-700 px-5 py-2 font-semibold text-white hover:bg-emerald-800 cursor-pointer"
+              >
+                আপডেট করুন
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
 
       {/* Add Class Modal */}
-      <Modal
-        isOpen={isAddClassModalOpen}
-        onClose={() => setIsAddClassModalOpen(false)}
-        title={t('Add Academic Class')}
-        subtitle={t('Define a new curriculum level')}
-        maxWidth="sm"
-      >
-        <form onSubmit={handleCreateClass} className="space-y-4 text-xs">
-          <div>
-            <label className="block font-semibold text-slate-700 mb-1">{t('Class Name')}</label>
-            <input
-              type="text"
-              required
-              placeholder="e.g. Hifzul Quran or Class Six"
-              value={classFormName}
-              onChange={(e) => setClassFormName(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 p-2.5 text-xs text-slate-900 focus:outline-hidden"
-            />
-          </div>
-
-          <div>
-            <label className="block font-semibold text-slate-700 mb-1">{t('Class Teacher')}</label>
-            <input
-              type="text"
-              placeholder="e.g. Maulana Ibrahim"
-              value={classFormTeacher}
-              onChange={(e) => setClassFormTeacher(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 p-2.5 text-xs text-slate-900 focus:outline-hidden"
-            />
-          </div>
-
-          <div>
-            <label className="block font-semibold text-slate-700 mb-1">{t('Standard Monthly Fee (৳)')}</label>
-            <input
-              type="number"
-              min="0"
-              required
-              value={classFormFee}
-              onChange={(e) => setClassFormFee(Number(e.target.value) || 0)}
-              className="w-full rounded-lg border border-slate-200 p-2.5 text-xs text-slate-900 focus:outline-hidden"
-            />
-          </div>
-
-          <div>
-            <label className="block font-semibold text-slate-700 mb-1">{t('Allowed Sections (Comma separated)')}</label>
-            <input
-              type="text"
-              required
-              placeholder="A, B, C"
-              value={classFormSections}
-              onChange={(e) => setClassFormSections(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 p-2.5 text-xs text-slate-900 focus:outline-hidden"
-            />
-          </div>
-
-          <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-            <button
-              type="button"
-              onClick={() => setIsAddClassModalOpen(false)}
-              className="rounded-lg border border-slate-200 px-4 py-2 font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
-            >
-              {t('Cancel')}
-            </button>
-            <button
-              type="submit"
-              className="rounded-lg bg-emerald-700 px-4 py-2 font-semibold text-white hover:bg-emerald-800 cursor-pointer"
-            >
-              {t('Create Class')}
-            </button>
-          </div>
-        </form>
-      </Modal>
+      {isAddClassModalOpen && (
+        <Modal
+          isOpen={isAddClassModalOpen}
+          onClose={() => setIsAddClassModalOpen(false)}
+          title="নতুন শ্রেণী যোগ করুন"
+          subtitle="মাদ্রাসার নতুন শ্রেণী এবং সেকশন কনফিগার করুন"
+          maxWidth="sm"
+        >
+          <form onSubmit={handleCreateClass} className="space-y-4 text-xs">
+            <div>
+              <label className="block font-semibold text-slate-700 mb-1">শ্রেণীর নাম *</label>
+              <input
+                type="text"
+                required
+                value={classFormName}
+                onChange={(e) => setClassFormName(e.target.value)}
+                placeholder="যেমন: মিজান, হেদায়া, তাকমীল..."
+                className="w-full rounded-lg border border-slate-200 p-2.5 text-xs text-slate-900 focus:outline-hidden"
+              />
+            </div>
+            <div>
+              <label className="block font-semibold text-slate-700 mb-1">শ্রেণীর শিক্ষক / ত্ত্বাবধায়ক</label>
+              <input
+                type="text"
+                value={classFormTeacher}
+                onChange={(e) => setClassFormTeacher(e.target.value)}
+                placeholder="শিক্ষকের নাম..."
+                className="w-full rounded-lg border border-slate-200 p-2.5 text-xs text-slate-900 focus:outline-hidden"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">মাসিক টিউশন ফি (৳)</label>
+                <input
+                  type="number"
+                  min={0}
+                  value={classFormFee}
+                  onChange={(e) => setClassFormFee(Number(e.target.value))}
+                  className="w-full rounded-lg border border-slate-200 p-2.5 text-xs font-mono font-bold text-slate-900 focus:outline-hidden"
+                />
+              </div>
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">সেকশনসমূহ</label>
+                <input
+                  type="text"
+                  value={classFormSections}
+                  onChange={(e) => setClassFormSections(e.target.value)}
+                  placeholder="A, B, C"
+                  className="w-full rounded-lg border border-slate-200 p-2.5 text-xs font-mono text-slate-900 focus:outline-hidden"
+                />
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setIsAddClassModalOpen(false)}
+                className="rounded-lg border border-slate-200 px-4 py-2 font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
+              >
+                বাতিল
+              </button>
+              <button
+                type="submit"
+                className="rounded-lg bg-emerald-700 px-5 py-2 font-semibold text-white hover:bg-emerald-800 cursor-pointer"
+              >
+                শ্রেণী সংরক্ষণ করুন
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
 
       {/* Edit Class Modal */}
-      <Modal
-        isOpen={isEditClassModalOpen}
-        onClose={() => {
-          setIsEditClassModalOpen(false);
-          setEditingClass(null);
-        }}
-        title={t('Edit Academic Class')}
-        subtitle={`Update configurations for ${editingClass?.name}`}
-        maxWidth="sm"
-      >
-        <form onSubmit={handleUpdateClassSubmit} className="space-y-4 text-xs">
-          <div>
-            <label className="block font-semibold text-slate-700 mb-1">{t('Class Name')}</label>
-            <input
-              type="text"
-              required
-              value={classFormName}
-              onChange={(e) => setClassFormName(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 p-2.5 text-xs text-slate-900 focus:outline-hidden"
-            />
-          </div>
+      {isEditClassModalOpen && editingClass && (
+        <Modal
+          isOpen={isEditClassModalOpen}
+          onClose={() => setIsEditClassModalOpen(false)}
+          title="শ্রেণী তথ্য সম্পাদনা"
+          subtitle="শ্রেণীর নাম, শিক্ষক ও ফি পরিবর্তন করুন"
+          maxWidth="sm"
+        >
+          <form onSubmit={handleUpdateClassSubmit} className="space-y-4 text-xs">
+            <div>
+              <label className="block font-semibold text-slate-700 mb-1">শ্রেণীর নাম *</label>
+              <input
+                type="text"
+                required
+                value={classFormName}
+                onChange={(e) => setClassFormName(e.target.value)}
+                className="w-full rounded-lg border border-slate-200 p-2.5 text-xs text-slate-900 focus:outline-hidden"
+              />
+            </div>
+            <div>
+              <label className="block font-semibold text-slate-700 mb-1">শ্রেণীর শিক্ষক</label>
+              <input
+                type="text"
+                value={classFormTeacher}
+                onChange={(e) => setClassFormTeacher(e.target.value)}
+                className="w-full rounded-lg border border-slate-200 p-2.5 text-xs text-slate-900 focus:outline-hidden"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">মাসিক টিউশন ফি (৳)</label>
+                <input
+                  type="number"
+                  min={0}
+                  value={classFormFee}
+                  onChange={(e) => setClassFormFee(Number(e.target.value))}
+                  className="w-full rounded-lg border border-slate-200 p-2.5 text-xs font-mono font-bold text-slate-900 focus:outline-hidden"
+                />
+              </div>
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">সেকশনসমূহ</label>
+                <input
+                  type="text"
+                  value={classFormSections}
+                  onChange={(e) => setClassFormSections(e.target.value)}
+                  className="w-full rounded-lg border border-slate-200 p-2.5 text-xs font-mono text-slate-900 focus:outline-hidden"
+                />
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setIsEditClassModalOpen(false)}
+                className="rounded-lg border border-slate-200 px-4 py-2 font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
+              >
+                বাতিল
+              </button>
+              <button
+                type="submit"
+                className="rounded-lg bg-emerald-700 px-5 py-2 font-semibold text-white hover:bg-emerald-800 cursor-pointer"
+              >
+                আপডেট করুন
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
 
-          <div>
-            <label className="block font-semibold text-slate-700 mb-1">{t('Class Teacher')}</label>
-            <input
-              type="text"
-              value={classFormTeacher}
-              onChange={(e) => setClassFormTeacher(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 p-2.5 text-xs text-slate-900 focus:outline-hidden"
-            />
-          </div>
+      {/* Add Account Category Modal */}
+      {isAddCatModalOpen && (
+        <Modal
+          isOpen={isAddCatModalOpen}
+          onClose={() => setIsAddCatModalOpen(false)}
+          title="নতুন হিসাব ক্যাটাগরি যোগ করুন"
+          subtitle="আয় বা ব্যয়ের নতুন হিসাব খাত তৈরি করুন"
+          maxWidth="sm"
+        >
+          <form onSubmit={handleCreateCat} className="space-y-4 text-xs">
+            <div>
+              <label className="block font-semibold text-slate-700 mb-1">খাতের নাম *</label>
+              <input
+                type="text"
+                required
+                value={catFormName}
+                onChange={(e) => setCatFormName(e.target.value)}
+                placeholder="যেমন: যাকাত ফান্ড, বিদ্যুৎ বিল..."
+                className="w-full rounded-lg border border-slate-200 p-2.5 text-xs text-slate-900 focus:outline-hidden"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">খাতের ধরণ *</label>
+                <select
+                  value={catFormType}
+                  onChange={(e) => setCatFormType(e.target.value as any)}
+                  className="w-full rounded-lg border border-slate-200 p-2.5 text-xs text-slate-900 bg-white focus:outline-hidden"
+                >
+                  <option value="income">আয় (Income)</option>
+                  <option value="expense">ব্যয় (Expense)</option>
+                </select>
+              </div>
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">স্ট্যাটাস *</label>
+                <select
+                  value={catFormStatus}
+                  onChange={(e) => setCatFormStatus(e.target.value as any)}
+                  className="w-full rounded-lg border border-slate-200 p-2.5 text-xs text-slate-900 bg-white focus:outline-hidden"
+                >
+                  <option value="Active">সক্রিয়</option>
+                  <option value="Inactive">নিষ্ক্রিয়</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label className="block font-semibold text-slate-700 mb-1">বিবরণ</label>
+              <input
+                type="text"
+                value={catFormDesc}
+                onChange={(e) => setCatFormDesc(e.target.value)}
+                placeholder="সংক্ষিপ্ত বিবরণ..."
+                className="w-full rounded-lg border border-slate-200 p-2.5 text-xs text-slate-900 focus:outline-hidden"
+              />
+            </div>
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setIsAddCatModalOpen(false)}
+                className="rounded-lg border border-slate-200 px-4 py-2 font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
+              >
+                বাতিল
+              </button>
+              <button
+                type="submit"
+                className="rounded-lg bg-emerald-700 px-5 py-2 font-semibold text-white hover:bg-emerald-800 cursor-pointer"
+              >
+                ক্যাটাগরি সংরক্ষণ করুন
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
 
-          <div>
-            <label className="block font-semibold text-slate-700 mb-1">{t('Standard Monthly Fee (৳)')}</label>
-            <input
-              type="number"
-              min="0"
-              required
-              value={classFormFee}
-              onChange={(e) => setClassFormFee(Number(e.target.value) || 0)}
-              className="w-full rounded-lg border border-slate-200 p-2.5 text-xs text-slate-900 focus:outline-hidden"
-            />
-          </div>
-
-          <div>
-            <label className="block font-semibold text-slate-700 mb-1">{t('Allowed Sections (Comma separated)')}</label>
-            <input
-              type="text"
-              required
-              value={classFormSections}
-              onChange={(e) => setClassFormSections(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 p-2.5 text-xs text-slate-900 focus:outline-hidden"
-            />
-          </div>
-
-          <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-            <button
-              type="button"
-              onClick={() => {
-                setIsEditClassModalOpen(false);
-                setEditingClass(null);
-              }}
-              className="rounded-lg border border-slate-200 px-4 py-2 font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
-            >
-              {t('Cancel')}
-            </button>
-            <button
-              type="submit"
-              className="rounded-lg bg-emerald-700 px-4 py-2 font-semibold text-white hover:bg-emerald-800 cursor-pointer"
-            >
-              {t('Save Changes')}
-            </button>
-          </div>
-        </form>
-      </Modal>
-
-      {/* Add Category Modal */}
-      <Modal
-        isOpen={isAddCatModalOpen}
-        onClose={() => setIsAddCatModalOpen(false)}
-        title="Add Account Category"
-        subtitle="Create a new voucher or ledger head"
-        maxWidth="sm"
-      >
-        <form onSubmit={handleCreateCat} className="space-y-4 text-xs">
-          <div>
-            <label className="block font-semibold text-slate-700 mb-1">Category Name</label>
-            <input
-              type="text"
-              required
-              placeholder="e.g. Utility Bills or Admission Fee"
-              value={catFormName}
-              onChange={(e) => setCatFormName(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 p-2.5 text-xs text-slate-900 focus:outline-hidden"
-            />
-          </div>
-
-          <div>
-            <label className="block font-semibold text-slate-700 mb-1">Category Type</label>
-            <select
-              value={catFormType}
-              onChange={(e) => setCatFormType(e.target.value as any)}
-              className="w-full rounded-lg border border-slate-200 bg-white p-2.5 text-xs text-slate-900 focus:outline-hidden"
-            >
-              <option value="income">Income Head</option>
-              <option value="expense">Expense Head</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block font-semibold text-slate-700 mb-1">Description</label>
-            <input
-              type="text"
-              placeholder="Brief description of transactions under this head..."
-              value={catFormDesc}
-              onChange={(e) => setCatFormDesc(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 p-2.5 text-xs text-slate-900 focus:outline-hidden"
-            />
-          </div>
-
-          <div>
-            <label className="block font-semibold text-slate-700 mb-1">Status</label>
-            <select
-              value={catFormStatus}
-              onChange={(e) => setCatFormStatus(e.target.value as any)}
-              className="w-full rounded-lg border border-slate-200 bg-white p-2.5 text-xs text-slate-900 focus:outline-hidden"
-            >
-              <option value="Active">Active</option>
-              <option value="Inactive">Inactive</option>
-            </select>
-          </div>
-
-          <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-            <button
-              type="button"
-              onClick={() => setIsAddCatModalOpen(false)}
-              className="rounded-lg border border-slate-200 px-4 py-2 font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="rounded-lg bg-emerald-700 px-4 py-2 font-semibold text-white hover:bg-emerald-800 cursor-pointer"
-            >
-              Create Category
-            </button>
-          </div>
-        </form>
-      </Modal>
-
-      {/* Edit Category Modal */}
-      <Modal
-        isOpen={isEditCatModalOpen}
-        onClose={() => {
-          setIsEditCatModalOpen(false);
-          setEditingCat(null);
-        }}
-        title="Edit Account Category"
-        subtitle={`Update configurations for ${editingCat?.name}`}
-        maxWidth="sm"
-      >
-        <form onSubmit={handleUpdateCatSubmit} className="space-y-4 text-xs">
-          <div>
-            <label className="block font-semibold text-slate-700 mb-1">Category Name</label>
-            <input
-              type="text"
-              required
-              value={catFormName}
-              onChange={(e) => setCatFormName(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 p-2.5 text-xs text-slate-900 focus:outline-hidden"
-            />
-          </div>
-
-          <div>
-            <label className="block font-semibold text-slate-700 mb-1">Category Type</label>
-            <select
-              value={catFormType}
-              onChange={(e) => setCatFormType(e.target.value as any)}
-              className="w-full rounded-lg border border-slate-200 bg-white p-2.5 text-xs text-slate-900 focus:outline-hidden"
-            >
-              <option value="income">Income Head</option>
-              <option value="expense">Expense Head</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block font-semibold text-slate-700 mb-1">Description</label>
-            <input
-              type="text"
-              value={catFormDesc}
-              onChange={(e) => setCatFormDesc(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 p-2.5 text-xs text-slate-900 focus:outline-hidden"
-            />
-          </div>
-
-          <div>
-            <label className="block font-semibold text-slate-700 mb-1">Status</label>
-            <select
-              value={catFormStatus}
-              onChange={(e) => setCatFormStatus(e.target.value as any)}
-              className="w-full rounded-lg border border-slate-200 bg-white p-2.5 text-xs text-slate-900 focus:outline-hidden"
-            >
-              <option value="Active">Active</option>
-              <option value="Inactive">Inactive</option>
-            </select>
-          </div>
-
-          <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-            <button
-              type="button"
-              onClick={() => {
-                setIsEditCatModalOpen(false);
-                setEditingCat(null);
-              }}
-              className="rounded-lg border border-slate-200 px-4 py-2 font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="rounded-lg bg-emerald-700 px-4 py-2 font-semibold text-white hover:bg-emerald-800 cursor-pointer"
-            >
-              Save Changes
-            </button>
-          </div>
-        </form>
-      </Modal>
-
-      {/* Delete User Confirmation Modal */}
-      <Modal
-        isOpen={Boolean(deletingUser)}
-        onClose={() => setDeletingUser(null)}
-        title={t('Delete User Account')}
-        subtitle={`Are you sure you want to revoke/delete the user account for "${deletingUser?.name}"?`}
-        maxWidth="sm"
-      >
-        <div className="space-y-4 text-xs">
-          <p className="text-slate-600">
-            This action will remove user access from the console.
-          </p>
-          <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-            <button
-              type="button"
-              onClick={() => setDeletingUser(null)}
-              className="rounded-lg border border-slate-200 px-4 py-2 font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
-            >
-              {t('Cancel')}
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                if (deletingUser) {
-                  deleteUser(deletingUser.id);
-                  setDeletingUser(null);
-                }
-              }}
-              className="rounded-lg bg-red-600 px-4 py-2 font-semibold text-white hover:bg-red-700 cursor-pointer"
-            >
-              {t('Delete')}
-            </button>
-          </div>
-        </div>
-      </Modal>
-
-      {/* Delete Academic Year Confirmation Modal */}
-      <Modal
-        isOpen={Boolean(deletingAy)}
-        onClose={() => setDeletingAy(null)}
-        title={t('Delete Academic Year')}
-        subtitle={`Are you sure you want to permanently delete Academic Year "${deletingAy?.year}"?`}
-        maxWidth="sm"
-      >
-        <div className="space-y-4 text-xs">
-          <p className="text-slate-600">
-            This action cannot be undone.
-          </p>
-          <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-            <button
-              type="button"
-              onClick={() => setDeletingAy(null)}
-              className="rounded-lg border border-slate-200 px-4 py-2 font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
-            >
-              {t('Cancel')}
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                if (deletingAy) {
-                  deleteAcademicYear(deletingAy.id);
-                  setDeletingAy(null);
-                }
-              }}
-              className="rounded-lg bg-red-600 px-4 py-2 font-semibold text-white hover:bg-red-700 cursor-pointer"
-            >
-              {t('Delete')}
-            </button>
-          </div>
-        </div>
-      </Modal>
-
-      {/* Delete Class Confirmation Modal */}
-      <Modal
-        isOpen={Boolean(deletingClass)}
-        onClose={() => setDeletingClass(null)}
-        title={t('Delete Academic Class')}
-        subtitle={`Are you sure you want to delete class "${deletingClass?.name}"? This action is permanent.`}
-        maxWidth="sm"
-      >
-        <div className="space-y-4 text-xs">
-          <p className="text-slate-600">
-            This will remove the class from the curriculum catalog.
-          </p>
-          <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-            <button
-              type="button"
-              onClick={() => setDeletingClass(null)}
-              className="rounded-lg border border-slate-200 px-4 py-2 font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
-            >
-              {t('Cancel')}
-            </button>
-            <button
-              type="button"
-              onClick={async () => {
-                if (deletingClass) {
-                  try {
-                    await deleteClass(deletingClass.id);
-                    setDeletingClass(null);
-                  } catch (err: any) {
-                    alert(err.message || 'Failed to delete class.');
-                  }
-                }
-              }}
-              className="rounded-lg bg-red-600 px-4 py-2 font-semibold text-white hover:bg-red-700 cursor-pointer"
-            >
-              {t('Delete')}
-            </button>
-          </div>
-        </div>
-      </Modal>
-
-      {/* Delete Category Confirmation Modal */}
-      <Modal
-        isOpen={Boolean(deletingCat)}
-        onClose={() => setDeletingCat(null)}
-        title={t('Delete Account Category')}
-        subtitle={`Are you sure you want to delete category "${deletingCat?.name}"?`}
-        maxWidth="sm"
-      >
-        <div className="space-y-4 text-xs">
-          <p className="text-slate-600">
-            This will remove the account category head.
-          </p>
-          <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-            <button
-              type="button"
-              onClick={() => setDeletingCat(null)}
-              className="rounded-lg border border-slate-200 px-4 py-2 font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
-            >
-              {t('Cancel')}
-            </button>
-            <button
-              type="button"
-              onClick={async () => {
-                if (deletingCat) {
-                  try {
-                    await deleteAccountCategory(deletingCat.id);
-                    setDeletingCat(null);
-                  } catch (err: any) {
-                    alert(err.message || 'Failed to delete category.');
-                  }
-                }
-              }}
-              className="rounded-lg bg-red-600 px-4 py-2 font-semibold text-white hover:bg-red-700 cursor-pointer"
-            >
-              {t('Delete')}
-            </button>
-          </div>
-        </div>
-      </Modal>
+      {/* Edit Account Category Modal */}
+      {isEditCatModalOpen && editingCat && (
+        <Modal
+          isOpen={isEditCatModalOpen}
+          onClose={() => setIsEditCatModalOpen(false)}
+          title="হিসাব ক্যাটাগরি সম্পাদনা"
+          subtitle="খাতের নাম ও বিবরণ পরিবর্তন করুন"
+          maxWidth="sm"
+        >
+          <form onSubmit={handleUpdateCatSubmit} className="space-y-4 text-xs">
+            <div>
+              <label className="block font-semibold text-slate-700 mb-1">খাতের নাম *</label>
+              <input
+                type="text"
+                required
+                value={catFormName}
+                onChange={(e) => setCatFormName(e.target.value)}
+                className="w-full rounded-lg border border-slate-200 p-2.5 text-xs text-slate-900 focus:outline-hidden"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">খাতের ধরণ *</label>
+                <select
+                  value={catFormType}
+                  onChange={(e) => setCatFormType(e.target.value as any)}
+                  className="w-full rounded-lg border border-slate-200 p-2.5 text-xs text-slate-900 bg-white focus:outline-hidden"
+                >
+                  <option value="income">আয়</option>
+                  <option value="expense">ব্যয়</option>
+                </select>
+              </div>
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">স্ট্যাটাস *</label>
+                <select
+                  value={catFormStatus}
+                  onChange={(e) => setCatFormStatus(e.target.value as any)}
+                  className="w-full rounded-lg border border-slate-200 p-2.5 text-xs text-slate-900 bg-white focus:outline-hidden"
+                >
+                  <option value="Active">সক্রিয়</option>
+                  <option value="Inactive">নিষ্ক্রিয়</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label className="block font-semibold text-slate-700 mb-1">বিবরণ</label>
+              <input
+                type="text"
+                value={catFormDesc}
+                onChange={(e) => setCatFormDesc(e.target.value)}
+                className="w-full rounded-lg border border-slate-200 p-2.5 text-xs text-slate-900 focus:outline-hidden"
+              />
+            </div>
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setIsEditCatModalOpen(false)}
+                className="rounded-lg border border-slate-200 px-4 py-2 font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
+              >
+                বাতিল
+              </button>
+              <button
+                type="submit"
+                className="rounded-lg bg-emerald-700 px-5 py-2 font-semibold text-white hover:bg-emerald-800 cursor-pointer"
+              >
+                আপডেট করুন
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
     </div>
   );
 };

@@ -8,6 +8,7 @@ import {
   Building2,
   Landmark,
   Settings,
+  Award,
   ChevronDown,
   ChevronRight,
   PanelLeftClose,
@@ -48,10 +49,10 @@ export const Sidebar: React.FC = () => {
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     students: true,
     'student-fees': false,
-    'aib-account': false,
     'revolving-fund': false,
     boarding: false,
     accounts: false,
+    exams: false,
     settings: false,
   });
 
@@ -73,6 +74,7 @@ export const Sidebar: React.FC = () => {
       label: 'Students',
       icon: GraduationCap,
       subItems: [
+        { key: 'teacher-recruitment', label: 'Teacher Recruitment' },
         { key: 'student-list', label: 'Student List' },
         { key: 'student-admission', label: 'Student Admission' },
         { key: 'student-information', label: 'Student Information' },
@@ -88,17 +90,6 @@ export const Sidebar: React.FC = () => {
         { key: 'other-fees', label: 'Other Fees' },
         { key: 'fee-collection', label: 'Fee Collection' },
         { key: 'due-fees', label: 'Due Fees' },
-      ],
-    },
-    {
-      key: 'aib-account',
-      label: 'Aib Account',
-      icon: Wallet,
-      subItems: [
-        { key: 'aib-collection', label: 'Aib Collection' },
-        { key: 'aib-expense', label: 'Aib Expense' },
-        { key: 'aib-balance', label: 'Aib Balance' },
-        { key: 'aib-transactions', label: 'Aib Transactions' },
       ],
     },
     {
@@ -134,6 +125,16 @@ export const Sidebar: React.FC = () => {
         { key: 'expense', label: 'Expense' },
         { key: 'transactions', label: 'Transactions' },
         { key: 'balance', label: 'Balance' },
+        { key: 'yearly-monthly-daily', label: 'Yearly, Monthly & Daily Reports' },
+      ],
+    },
+    {
+      key: 'exams',
+      label: 'Examinations',
+      icon: Award,
+      subItems: [
+        { key: 'exam-marks', label: 'Exam Marks' },
+        { key: 'report-cards', label: 'Report Cards' },
       ],
     },
     {

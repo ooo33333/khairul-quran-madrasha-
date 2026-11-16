@@ -32,11 +32,35 @@ export const StudentInfoPage: React.FC = () => {
     fees,
     boardingStudents,
     openFeeCollectionForStudent,
+    studentNotes,
+    addStudentNote,
+    deleteStudentNote,
     t,
   } = useApp();
 
   const [activeId, setActiveId] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [studentNoteTitle, setStudentNoteTitle] = useState('');
+  const [studentNoteDesc, setStudentNoteDesc] = useState('');
+  const [studentNoteType, setStudentNoteType] = useState<'Crime/Discipline' | 'Achievement' | 'Warning' | 'General'>('General');
+
+  const handleAddStudentNote = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentStudent || !studentNoteTitle || !studentNoteDesc) return;
+
+    await addStudentNote({
+      id: `SNTE-${Date.now()}`,
+      studentId: currentStudent.id,
+      date: new Date().toISOString().split('T')[0],
+      title: studentNoteTitle,
+      description: studentNoteDesc,
+      noteType: studentNoteType,
+      createdAt: new Date().toISOString(),
+    });
+
+    setStudentNoteTitle('');
+    setStudentNoteDesc('');
+  };
 
   // Modals state for Edit & Delete directly from profile
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
@@ -396,11 +420,52 @@ export const StudentInfoPage: React.FC = () => {
                         {currentStudent.motherName || t('Not recorded')}
                       </p>
                     </div>
-                    <div className="space-y-1">
-                      <span className="text-slate-400">{t('Phone Number')}</span>
-                      <p className="font-semibold text-slate-800 font-mono">
-                        {currentStudent.phone || t('Not recorded')}
-                      </p>
+                    <div className="space-y-1 sm:col-span-2">
+                      <span className="text-slate-400">{t('Phone Number')} & WhatsApp</span>
+                      <div className="flex flex-col gap-1.5 mt-1">
+                        {currentStudent.contactPhones && currentStudent.contactPhones.length > 0 ? (
+                          currentStudent.contactPhones.map((cp, idx) => (
+                            <div key={idx} className="flex items-center justify-between bg-slate-50 p-2 rounded-lg border border-slate-200 text-xs">
+                              <div>
+                                <span className="font-bold text-slate-800">{cp.relation}:</span>
+                                <span className="font-mono text-slate-700 ml-1.5">{cp.number}</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <a
+                                  href={`tel:${cp.number}`}
+                                  className="px-2 py-0.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-[10px] font-semibold flex items-center gap-1"
+                                  title="সরাসরি কল করুন"
+                                >
+                                  কল
+                                </a>
+                                {cp.whatsapp && (
+                                  <a
+                                    href={`https://wa.me/${cp.number.replace(/\D/g, '')}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="px-2 py-0.5 bg-teal-600 hover:bg-teal-700 text-white rounded text-[10px] font-semibold flex items-center gap-1"
+                                    title="WhatsApp চ্যাট"
+                                  >
+                                    WhatsApp
+                                  </a>
+                                )}
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="flex items-center justify-between bg-slate-50 p-2 rounded-lg border border-slate-200">
+                            <span className="font-mono text-slate-800">{currentStudent.phone || t('Not recorded')}</span>
+                            {currentStudent.phone && (
+                              <a
+                                href={`tel:${currentStudent.phone}`}
+                                className="px-2 py-0.5 bg-emerald-600 text-white rounded text-[10px] font-semibold flex items-center gap-1"
+                              >
+                                কল
+                              </a>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
                     <div className="space-y-1">
                       <span className="text-slate-400">{t('Date of Birth')}</span>
@@ -427,6 +492,35 @@ export const StudentInfoPage: React.FC = () => {
                     <p className="font-medium text-slate-800 mt-0.5">
                       {currentStudent.address || t('Address not registered')}
                     </p>
+                  </div>
+
+                  <div className="mt-4 pt-4 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+                    <div className="space-y-1">
+                      <span className="text-slate-400">ভর্তির সময় প্রদত্ত ফি</span>
+                      <p className="font-bold text-emerald-700 font-mono">
+                        {currentStudent.admissionFeePaid !== undefined ? `৳${currentStudent.admissionFeePaid.toLocaleString()}` : 'রেকর্ড করা হয়নি'}
+                      </p>
+                    </div>
+                    {currentStudent.admissionFormPhotoUrl && (
+                      <div className="space-y-1">
+                        <span className="text-slate-400">ভর্তির ফরমের ছবি</span>
+                        <div>
+                          <a href={currentStudent.admissionFormPhotoUrl} target="_blank" rel="noreferrer" className="text-emerald-700 font-semibold hover:underline flex items-center gap-1">
+                            📄 ছবি দেখুন (View Form)
+                          </a>
+                        </div>
+                      </div>
+                    )}
+                    {currentStudent.birthCertificatePhotoUrl && (
+                      <div className="space-y-1">
+                        <span className="text-slate-400">জন্ম নিবন্ধনের ছবি</span>
+                        <div>
+                          <a href={currentStudent.birthCertificatePhotoUrl} target="_blank" rel="noreferrer" className="text-emerald-700 font-semibold hover:underline flex items-center gap-1">
+                            📄 ছবি দেখুন (View Birth Cert)
+                          </a>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -555,6 +649,105 @@ export const StudentInfoPage: React.FC = () => {
                           ৳{boardingRecord.monthlyFee}/mo
                         </p>
                       </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Student Behavior & Academic Notes Section */}
+                {currentStudent && (
+                  <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs space-y-4">
+                    <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider pb-2 border-b border-slate-100 flex items-center justify-between">
+                      <span>শিক্ষার্থীর নোট ও আচরণ রেকর্ড (অপরাধ, কৃতিত্ব ও মন্তব্য)</span>
+                      <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-normal">
+                        নোট সংখ্যা: {studentNotes.filter((n) => n.studentId === currentStudent.id).length}
+                      </span>
+                    </h4>
+
+                    {/* Add Note Form */}
+                    <form onSubmit={handleAddStudentNote} className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div className="sm:col-span-2">
+                          <input
+                            type="text"
+                            required
+                            placeholder="নোটের শিরোনাম (যেমন: ক্লাসে অনুপস্থিতি / কোরআন হেফজে বিশেষ পুরস্কার)"
+                            value={studentNoteTitle}
+                            onChange={(e) => setStudentNoteTitle(e.target.value)}
+                            className="w-full px-3 py-1.5 text-xs bg-white rounded-lg border border-slate-200 focus:outline-hidden"
+                          />
+                        </div>
+                        <div>
+                          <select
+                            value={studentNoteType}
+                            onChange={(e) => setStudentNoteType(e.target.value as any)}
+                            className="w-full px-3 py-1.5 text-xs bg-white rounded-lg border border-slate-200 focus:outline-hidden"
+                          >
+                            <option value="General">সাধারণ (General)</option>
+                            <option value="Crime/Discipline">অপরাধ / শৃঙ্খলাভঙ্গ (Discipline)</option>
+                            <option value="Achievement">কৃতিত্ব / পুরস্কার (Achievement)</option>
+                            <option value="Warning">সতর্কবার্তা (Warning)</option>
+                          </select>
+                        </div>
+                        <div className="sm:col-span-3">
+                          <textarea
+                            required
+                            rows={2}
+                            placeholder="বিস্তারিত নোট লিখুন..."
+                            value={studentNoteDesc}
+                            onChange={(e) => setStudentNoteDesc(e.target.value)}
+                            className="w-full px-3 py-1.5 text-xs bg-white rounded-lg border border-slate-200 focus:outline-hidden"
+                          ></textarea>
+                        </div>
+                      </div>
+                      <div className="flex justify-end">
+                        <button
+                          type="submit"
+                          className="px-4 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 transition-colors"
+                        >
+                          নোট সংরক্ষণ করুন
+                        </button>
+                      </div>
+                    </form>
+
+                    {/* Notes List */}
+                    <div className="space-y-2.5 max-h-52 overflow-y-auto">
+                      {studentNotes
+                        .filter((n) => n.studentId === currentStudent.id)
+                        .map((note) => (
+                          <div key={note.id} className="p-3 rounded-lg bg-slate-50 border border-slate-200 flex items-start justify-between gap-3 text-xs">
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2">
+                                <span
+                                  className={`text-[10px] font-semibold px-2 py-0.5 rounded-md ${
+                                    note.noteType === 'Achievement'
+                                      ? 'bg-emerald-100 text-emerald-800'
+                                      : note.noteType === 'Crime/Discipline'
+                                      ? 'bg-rose-100 text-rose-800'
+                                      : note.noteType === 'Warning'
+                                      ? 'bg-amber-100 text-amber-800'
+                                      : 'bg-slate-200 text-slate-700'
+                                  }`}
+                                >
+                                  {note.noteType}
+                                </span>
+                                <span className="font-bold text-slate-900">{note.title}</span>
+                                <span className="text-[10px] text-slate-400 font-mono">{note.date}</span>
+                              </div>
+                              <p className="text-slate-600">{note.description}</p>
+                            </div>
+                            <button
+                              onClick={() => deleteStudentNote(note.id)}
+                              className="text-slate-400 hover:text-rose-600 p-1"
+                              title="নোট মুছুন"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        ))}
+
+                      {studentNotes.filter((n) => n.studentId === currentStudent.id).length === 0 && (
+                        <p className="text-xs text-slate-400 text-center py-4 italic">এই শিক্ষার্থীর জন্য কোনো নোট বা আচরণ রেকর্ড সংরক্ষিত নেই।</p>
+                      )}
                     </div>
                   </div>
                 )}

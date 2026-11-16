@@ -11,9 +11,10 @@ import {
 import { useApp } from '../../context/AppContext';
 import { StudentStatus } from '../../types';
 import { Breadcrumb } from '../../components/common/Breadcrumb';
+import { compressImage } from '../../lib/firestoreService';
 
 export const StudentAdmissionPage: React.FC = () => {
-  const { addStudent, setActiveNav, classes, checkStudentIdExists, students, t } = useApp();
+  const { addStudent, addFeePayment, setActiveNav, classes, checkStudentIdExists, students, language, t } = useApp();
 
   // Generate suggested unique ID based on existing count
   const suggestedId = `STD-${1000 + (students ? students.length + 1 : 1)}`;
@@ -34,22 +35,54 @@ export const StudentAdmissionPage: React.FC = () => {
     roomNo: '',
   });
 
+  const [contactPhones, setContactPhones] = useState<
+    { number: string; relation: string; whatsapp: boolean }[]
+  >([{ number: '', relation: 'পিতা', whatsapp: false }]);
+
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [admissionFormPhotoPreview, setAdmissionFormPhotoPreview] = useState<string | null>(null);
+  const [birthCertificatePhotoPreview, setBirthCertificatePhotoPreview] = useState<string | null>(null);
+  const [admissionFeePaid, setAdmissionFeePaid] = useState<number | ''>('');
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 2 * 1024 * 1024) {
-        setErrorMessage('Photo file size should not exceed 2MB.');
-        return;
+      try {
+        const compressed = await compressImage(file, 400, 400, 0.7);
+        setPhotoPreview(compressed);
+      } catch (err) {
+        console.error('Image compression error:', err);
+        setErrorMessage('Failed to process image.');
       }
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPhotoPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleAdmissionFormPhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      try {
+        const compressed = await compressImage(file, 600, 600, 0.7);
+        setAdmissionFormPhotoPreview(compressed);
+      } catch (err) {
+        console.error('Image compression error:', err);
+        setErrorMessage('Failed to process image.');
+      }
+    }
+  };
+
+  const handleBirthCertificatePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      try {
+        const compressed = await compressImage(file, 600, 600, 0.7);
+        setBirthCertificatePhotoPreview(compressed);
+      } catch (err) {
+        console.error('Image compression error:', err);
+        setErrorMessage('Failed to process image.');
+      }
     }
   };
 
@@ -108,7 +141,8 @@ export const StudentAdmissionPage: React.FC = () => {
         fatherName: sFather,
         motherName: formData.motherName.trim(),
         dob: formData.dob,
-        phone: formData.phone.trim(),
+        phone: contactPhones[0]?.number || '',
+        contactPhones: contactPhones.filter((p) => p.number.trim() !== ''),
         address: formData.address.trim(),
         className: sClass,
         section: formData.section.trim() || 'A',
@@ -117,7 +151,30 @@ export const StudentAdmissionPage: React.FC = () => {
         boarding: formData.boarding,
         roomNo: formData.boarding ? formData.roomNo || 'Dorm-General' : undefined,
         photoUrl: photoPreview || undefined,
+        admissionFormPhotoUrl: admissionFormPhotoPreview || undefined,
+        birthCertificatePhotoUrl: birthCertificatePhotoPreview || undefined,
+        admissionFeePaid: admissionFeePaid !== '' ? Number(admissionFeePaid) : undefined,
       });
+
+      // If admission fee paid is recorded, also record fee payment entry
+      if (admissionFeePaid !== '' && Number(admissionFeePaid) > 0) {
+        try {
+          await addFeePayment({
+            studentId: sId,
+            studentName: sName,
+            className: sClass,
+            section: formData.section.trim() || 'A',
+            feeType: 'Admission Fee',
+            amount: Number(admissionFeePaid),
+            paidAmount: Number(admissionFeePaid),
+            paymentDate: sDate,
+            paymentMethod: 'Cash',
+            note: 'Automatic fee record upon student admission',
+          });
+        } catch (feeErr) {
+          console.warn('Failed to auto-record admission fee payment:', feeErr);
+        }
+      }
 
       // Redirect to Student List to view the newly enrolled student
       setActiveNav('students', 'student-list');
@@ -146,6 +203,9 @@ export const StudentAdmissionPage: React.FC = () => {
       roomNo: '',
     });
     setPhotoPreview(null);
+    setAdmissionFormPhotoPreview(null);
+    setBirthCertificatePhotoPreview(null);
+    setAdmissionFeePaid('');
     setErrorMessage(null);
   };
 
@@ -315,17 +375,71 @@ export const StudentAdmissionPage: React.FC = () => {
                   />
                 </div>
 
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">
-                    {t('Phone')}
-                  </label>
-                  <input
-                    type="tel"
-                    placeholder="+1 (555) 000-0000"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    className="w-full rounded-lg border border-slate-200 bg-slate-50/50 p-2.5 text-xs text-slate-900 focus:border-emerald-600 focus:bg-white focus:outline-hidden"
-                  />
+                <div className="sm:col-span-2">
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block font-semibold text-slate-700">
+                      শিক্ষার্থীর যোগাযোগ নম্বরসমূহ (একাধিক ও কার নম্বর উল্লেখসহ)
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setContactPhones([...contactPhones, { number: '', relation: 'অভিভাবক', whatsapp: false }])}
+                      className="text-[11px] font-semibold text-emerald-700 hover:underline flex items-center gap-1 cursor-pointer"
+                    >
+                      + আরেকটি নম্বর যোগ করুন
+                    </button>
+                  </div>
+
+                  <div className="space-y-2">
+                    {contactPhones.map((cp, idx) => (
+                      <div key={idx} className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          placeholder="সম্পর্ক/কার নম্বর (যেমন: পিতা, মাতা, অভিভাবক)"
+                          value={cp.relation}
+                          onChange={(e) => {
+                            const updated = [...contactPhones];
+                            updated[idx].relation = e.target.value;
+                            setContactPhones(updated);
+                          }}
+                          className="w-1/3 rounded-lg border border-slate-200 bg-slate-50/50 p-2 text-xs text-slate-900 focus:bg-white focus:outline-hidden"
+                        />
+                        <input
+                          type="tel"
+                          placeholder="ফোন নম্বর (যেমন: 018XXXXXXXX)"
+                          value={cp.number}
+                          onChange={(e) => {
+                            const updated = [...contactPhones];
+                            updated[idx].number = e.target.value;
+                            setContactPhones(updated);
+                          }}
+                          className="flex-1 rounded-lg border border-slate-200 bg-slate-50/50 p-2 text-xs text-slate-900 font-mono focus:bg-white focus:outline-hidden"
+                        />
+                        <label className="flex items-center gap-1 text-[11px] font-medium text-slate-700 shrink-0 cursor-pointer select-none">
+                          <input
+                            type="checkbox"
+                            checked={cp.whatsapp}
+                            onChange={(e) => {
+                              const updated = [...contactPhones];
+                              updated[idx].whatsapp = e.target.checked;
+                              setContactPhones(updated);
+                            }}
+                            className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                          />
+                          <span>WhatsApp</span>
+                        </label>
+                        {contactPhones.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => setContactPhones(contactPhones.filter((_, i) => i !== idx))}
+                            className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg cursor-pointer"
+                            title="মুছুন"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
@@ -401,6 +515,118 @@ export const StudentAdmissionPage: React.FC = () => {
                   <option value="Graduated">{t('Graduated')}</option>
                   <option value="Left">{t('Left')}</option>
                 </select>
+              </div>
+            </div>
+          </div>
+
+          {/* Section 2.5: Admission Documents & Payment Details */}
+          <div>
+            <h3 className="text-sm font-bold text-slate-900 border-b border-slate-100 pb-2 mb-4 flex items-center gap-2">
+              <Camera className="h-4 w-4 text-emerald-600" />
+              <span>{language === 'bn' ? 'ভর্তি বিবরণ ও দাপ্তরিক কাগজপত্র' : 'Admission Details & Documents'}</span>
+            </h3>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 text-xs">
+              {/* Admission Form Photo */}
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 flex flex-col items-center justify-center">
+                <span className="font-semibold text-slate-700 mb-2">
+                  {language === 'bn' ? 'ভর্তির ফরমের ছবি' : 'Admission Form Photo'}
+                </span>
+                <div className="relative flex h-28 w-full max-w-[200px] items-center justify-center rounded-lg border-2 border-dashed border-slate-300 bg-white overflow-hidden hover:bg-slate-50 transition-colors">
+                  {admissionFormPhotoPreview ? (
+                    <img
+                      src={admissionFormPhotoPreview}
+                      alt="Admission Form"
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="text-center p-2">
+                      <Camera className="mx-auto h-5 w-5 text-slate-400 mb-1" />
+                      <span className="text-[10px] font-medium text-slate-500">
+                        {language === 'bn' ? 'ফরমের ছবি আপলোড' : 'Upload Form Photo'}
+                      </span>
+                    </div>
+                  )}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleAdmissionFormPhotoChange}
+                    className="absolute inset-0 opacity-0 cursor-pointer"
+                  />
+                </div>
+                {admissionFormPhotoPreview && (
+                  <button
+                    type="button"
+                    onClick={() => setAdmissionFormPhotoPreview(null)}
+                    className="mt-2 text-[10px] text-red-600 hover:underline cursor-pointer"
+                  >
+                    {language === 'bn' ? 'ছবি সরান' : 'Remove photo'}
+                  </button>
+                )}
+              </div>
+
+              {/* Birth Certificate Photo */}
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 flex flex-col items-center justify-center">
+                <span className="font-semibold text-slate-700 mb-2">
+                  {language === 'bn' ? 'জন্ম নিবন্ধনের ছবি' : 'Birth Certificate Photo'}
+                </span>
+                <div className="relative flex h-28 w-full max-w-[200px] items-center justify-center rounded-lg border-2 border-dashed border-slate-300 bg-white overflow-hidden hover:bg-slate-50 transition-colors">
+                  {birthCertificatePhotoPreview ? (
+                    <img
+                      src={birthCertificatePhotoPreview}
+                      alt="Birth Certificate"
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="text-center p-2">
+                      <Camera className="mx-auto h-5 w-5 text-slate-400 mb-1" />
+                      <span className="text-[10px] font-medium text-slate-500">
+                        {language === 'bn' ? 'জন্ম নিবন্ধন আপলোড' : 'Upload Birth Cert'}
+                      </span>
+                    </div>
+                  )}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleBirthCertificatePhotoChange}
+                    className="absolute inset-0 opacity-0 cursor-pointer"
+                  />
+                </div>
+                {birthCertificatePhotoPreview && (
+                  <button
+                    type="button"
+                    onClick={() => setBirthCertificatePhotoPreview(null)}
+                    className="mt-2 text-[10px] text-red-600 hover:underline cursor-pointer"
+                  >
+                    {language === 'bn' ? 'ছবি সরান' : 'Remove photo'}
+                  </button>
+                )}
+              </div>
+
+              {/* Admission Fee Paid */}
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 flex flex-col justify-between">
+                <div>
+                  <span className="font-semibold text-slate-700 block mb-1">
+                    {language === 'bn' ? 'ভর্তির সময় প্রদত্ত টাকার পরিমাণ (৳)' : 'Admission Fee Amount Paid (৳)'}
+                  </span>
+                  <p className="text-[11px] text-slate-500 mb-3">
+                    {language === 'bn' ? 'ছাত্র ভর্তির সময় যে পরিমাণ ফি পরিশোধ করেছে তা এখানে লিখুন।' : 'Record amount paid upon admission.'}
+                  </p>
+                </div>
+                <div>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-slate-500">৳</span>
+                    <input
+                      type="number"
+                      min="0"
+                      step="any"
+                      placeholder="e.g. 1500"
+                      value={admissionFeePaid}
+                      onChange={(e) => setAdmissionFeePaid(e.target.value === '' ? '' : Number(e.target.value))}
+                      className="w-full rounded-lg border border-slate-200 bg-white py-2.5 pl-8 pr-3 text-sm font-bold text-emerald-700 font-mono focus:border-emerald-600 focus:outline-hidden"
+                    />
+                  </div>
+                </div>
               </div>
             </div>
           </div>

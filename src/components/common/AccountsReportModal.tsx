@@ -83,27 +83,6 @@ export const AccountsReportModal: React.FC<AccountsReportModalProps> = ({ isOpen
     [filteredGeneral]
   );
 
-  // 2. Aib Account Data
-  const filteredAib = useMemo(() => {
-    return aibTransactions.filter((tx) => matchesDate(tx.date));
-  }, [aibTransactions, periodType, selectedMonth, startDate, endDate]);
-
-  const aibCollection = useMemo(
-    () =>
-      filteredAib
-        .filter((tx) => tx.type === 'collection')
-        .reduce((sum, tx) => sum + (Number(tx.amount) || 0), 0),
-    [filteredAib]
-  );
-
-  const aibExpense = useMemo(
-    () =>
-      filteredAib
-        .filter((tx) => tx.type === 'expense')
-        .reduce((sum, tx) => sum + (Number(tx.amount) || 0), 0),
-    [filteredAib]
-  );
-
   // 3. Revolving Fund Data
   const filteredRevolving = useMemo(() => {
     return revolvingFund.filter((tx) => matchesDate(tx.date));
@@ -124,6 +103,11 @@ export const AccountsReportModal: React.FC<AccountsReportModalProps> = ({ isOpen
         .reduce((sum, tx) => sum + (Number(tx.amount) || 0), 0),
     [filteredRevolving]
   );
+
+  // 2. Aib Account Data
+  const filteredAib = filteredRevolving;
+  const aibCollection = revolvingCollection;
+  const aibExpense = revolvingDistribution;
 
   const revolvingReturn = useMemo(
     () =>
@@ -181,7 +165,7 @@ export const AccountsReportModal: React.FC<AccountsReportModalProps> = ({ isOpen
     // Title
     ctx.fillStyle = '#1e293b';
     ctx.font = 'bold 18px sans-serif';
-    ctx.fillText('খায়রুল কুরআন মাদ্রাসা - আর্থিক হিসাব সারসংক্ষেপ চার্ট', 40, 40);
+    ctx.fillText('খাইরুল কুরআন মাদ্রাসা - আর্থিক হিসাব সারসংক্ষেপ চার্ট', 40, 40);
 
     ctx.font = '12px sans-serif';
     ctx.fillStyle = '#64748b';
@@ -191,7 +175,7 @@ export const AccountsReportModal: React.FC<AccountsReportModalProps> = ({ isOpen
     const categories = [
       { label: 'সাধারণ আয়', value: generalIncome, color: '#059669' },
       { label: 'সাধারণ ব্যয়', value: generalExpense, color: '#d97706' },
-      { label: 'আইব সংগ্রহ', value: aibCollection, color: '#2563eb' },
+      { label: 'গোরাবাত তহবিল সংগ্রহ', value: aibCollection, color: '#2563eb' },
       { label: 'রিভলভিং ফান্ড', value: revolvingCollection, color: '#7c3aed' },
       { label: 'ছাত্রদের ফি', value: totalFeesCollected, color: '#0284c7' },
     ];
@@ -246,7 +230,7 @@ export const AccountsReportModal: React.FC<AccountsReportModalProps> = ({ isOpen
               </h2>
               <p className="text-xs text-slate-300">
                 {language === 'bn'
-                  ? 'খায়রুল কুরআন মাদ্রাসা অফিসিয়াল আর্থিক হিসাব বিবরণী'
+                  ? 'খাইরুল কুরআন মাদ্রাসা অফিসিয়াল আর্থিক হিসাব বিবরণী'
                   : 'Khairul Quran Madrasa Official Financial Reports'}
               </p>
             </div>
@@ -279,7 +263,7 @@ export const AccountsReportModal: React.FC<AccountsReportModalProps> = ({ isOpen
                   {language === 'bn' ? 'মাদ্রাসার সাধারণ হিসাব (General Accounts)' : 'General Madrasa Accounts'}
                 </option>
                 <option value="aib">
-                  {language === 'bn' ? 'আইবের হিসাব (Aib Account)' : 'Aib Account'}
+                  {language === 'bn' ? 'গোরাবাতের হিসাব (Aib Account)' : 'Aib Account'}
                 </option>
                 <option value="revolving">
                   {language === 'bn' ? 'রিভলভিং ফান্ড (Revolving Fund)' : 'Revolving Fund'}
@@ -407,7 +391,7 @@ export const AccountsReportModal: React.FC<AccountsReportModalProps> = ({ isOpen
               )}
               <div>
                 <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight font-serif">
-                  খায়রুল কুরআন মাদ্রাসা
+                  খাইরুল কুরআন মাদ্রাসা
                 </h1>
                 <p className="text-xs text-slate-600 font-medium">
                   {madrasaInfo?.address || 'মাদ্রাসা অফিস ম্যানেজমেন্ট সিস্টেম, বাংলাদেশ'}
@@ -419,7 +403,7 @@ export const AccountsReportModal: React.FC<AccountsReportModalProps> = ({ isOpen
               <h2 className="text-sm sm:text-base font-bold text-slate-800 uppercase tracking-wide bg-slate-100 py-1.5 rounded-md inline-block px-4">
                 {accountType === 'all' && 'সকল আর্থিক হিসাবের সামগ্রিক সারসংক্ষেপ রিপোর্ট'}
                 {accountType === 'general' && 'মাদ্রাসার সাধারণ হিসাব বিবরণী'}
-                {accountType === 'aib' && 'আইব অ্যাকাউন্ট হিসাব রিপোর্ট'}
+                {accountType === 'aib' && 'গোরাবাত তহবিল হিসাব রিপোর্ট'}
                 {accountType === 'revolving' && 'রিভলভিং ফান্ড হিসাব রিপোর্ট'}
                 {accountType === 'fees' && 'ছাত্রদের ফি আদায় ও বকেয়া রিপোর্ট'}
                 {accountType === 'boarding' && 'বোর্ডিং হিসাব ও খরচ বিবরণী'}
@@ -458,7 +442,7 @@ export const AccountsReportModal: React.FC<AccountsReportModalProps> = ({ isOpen
                   <p className="text-base font-bold text-amber-700 font-mono mt-1">৳{generalExpense.toLocaleString()}</p>
                 </div>
                 <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-2xs text-center">
-                  <span className="text-[11px] text-slate-500 font-semibold block">আইব সংগ্রহ</span>
+                  <span className="text-[11px] text-slate-500 font-semibold block">গোরাবাত তহবিল সংগ্রহ</span>
                   <p className="text-base font-bold text-blue-700 font-mono mt-1">৳{aibCollection.toLocaleString()}</p>
                 </div>
                 <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-2xs text-center">
@@ -574,7 +558,7 @@ export const AccountsReportModal: React.FC<AccountsReportModalProps> = ({ isOpen
               <div className="flex items-center justify-between border-b border-slate-200 pb-2">
                 <h3 className="text-sm font-bold text-slate-900 uppercase flex items-center gap-2">
                   <Wallet className="h-4 w-4 text-blue-600" />
-                  <span>আইব অ্যাকাউন্ট হিসাব (Aib Account)</span>
+                  <span>গোরাবাত তহবিল হিসাব (Aib Account)</span>
                 </h3>
                 <span className="text-xs font-semibold text-slate-600 font-mono">
                   সংগ্রহ: ৳{aibCollection.toLocaleString()} | খরচ: ৳{aibExpense.toLocaleString()}
@@ -596,7 +580,7 @@ export const AccountsReportModal: React.FC<AccountsReportModalProps> = ({ isOpen
                     {filteredAib.length === 0 ? (
                       <tr>
                         <td colSpan={5} className="px-3 py-4 text-center text-slate-400">
-                          কোনো আইব হিসাবের এন্ট্রি পাওয়া যায়নি।
+                          কোনো গোরাবাত হিসাবের এন্ট্রি পাওয়া যায়নি।
                         </td>
                       </tr>
                     ) : (
@@ -604,7 +588,7 @@ export const AccountsReportModal: React.FC<AccountsReportModalProps> = ({ isOpen
                         <tr key={tx.transactionId || tx.id} className="hover:bg-slate-50">
                           <td className="px-3 py-2 font-mono">{tx.date}</td>
                           <td className="px-3 py-2 font-semibold capitalize">{tx.type}</td>
-                          <td className="px-3 py-2 font-medium">{tx.category}</td>
+                          <td className="px-3 py-2 font-medium">{tx.reference || '-'}</td>
                           <td className="px-3 py-2 text-slate-600">{tx.description}</td>
                           <td className="px-3 py-2 text-right font-mono font-bold text-slate-900">
                             ৳{Number(tx.amount || 0).toLocaleString()}
@@ -794,7 +778,7 @@ export const AccountsReportModal: React.FC<AccountsReportModalProps> = ({ isOpen
         {/* Modal Footer */}
         <div className="border-t border-slate-200 bg-slate-50 px-6 py-3 flex items-center justify-between print:hidden">
           <span className="text-xs text-slate-500">
-            খায়রুল কুরআন মাদ্রাসা অফিস ম্যানেজমেন্ট সিস্টেম • প্রিন্ট করার সময় স্বয়ংক্রিয়ভাবে হেডার/ফুটার পরিচ্ছন্ন থাকবে।
+            খাইরুল কুরআন মাদ্রাসা অফিস ম্যানেজমেন্ট সিস্টেম • প্রিন্ট করার সময় স্বয়ংক্রিয়ভাবে হেডার/ফুটার পরিচ্ছন্ন থাকবে।
           </span>
           <button
             onClick={onClose}

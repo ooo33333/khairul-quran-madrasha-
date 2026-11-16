@@ -12,7 +12,7 @@ import {
 } from '../types';
 
 export const INITIAL_MADRASA_INFO: MadrasaInfo = {
-  name: 'খায়রুল কুরআন মাদ্রাসা অফিস',
+  name: 'খাইরুল কুরআন মাদ্রাসা অফিস',
   tagline: 'Center for Islamic Sciences & Quranic Studies',
   established: '1998',
   regNumber: 'EDU-REG/8849-ISL',
